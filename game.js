@@ -231,8 +231,8 @@ window.addEventListener("load", function (event) {
     let last_frame_time = Date.now(); // new Date().getTime()
 
     function drawFrame() {
-        var frame_time = Date.now(); // new Date().getTime()
-        var dt = (frame_time - last_frame_time) / 1000.0;
+        const frame_time = Date.now(); // new Date().getTime()
+        const dt = (frame_time - last_frame_time) / 1000.0;
         last_frame_time = frame_time;
         // in each frame call world.step(timeStep) with fixed timeStep
         world.step(dt);
@@ -397,13 +397,13 @@ window.addEventListener("load", function (event) {
 
     window.addEventListener('devicemotion', function(event) {
         sensors_work = true;
-        var accel = event.accelerationIncludingGravity;
+        const accel = event.accelerationIncludingGravity;
 
-        var a_x = accel.x;
-        var a_y = - Math.sqrt(accel.y * accel.y + accel.z * accel.z);
+        let a_x = accel.x;
+        let a_y = - Math.sqrt(accel.y * accel.y + accel.z * accel.z);
         if ((accel.y < 0 && Math.abs(accel.y) > Math.abs(accel.z)) || (accel.z < 0 && Math.abs(accel.z) > Math.abs(accel.y)))
             a_y = -a_y;
-        var g = pl.Vec2(- a_x * 2, a_y * 2); // throw away z
+        const g = pl.Vec2(- a_x * 2, a_y * 2);
         if (typeof world !== 'undefined') world.setGravity(g);
 
         if (init_a_x === null) {
