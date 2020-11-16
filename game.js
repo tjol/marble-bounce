@@ -196,7 +196,7 @@ window.addEventListener("load", function (event) {
     }
 
     // Screen locking (works only on Chrome, probably)
-    let screenWakeLock;
+    let screenWakeLock = null;
     function requestWakeLock() {
         if ('wakeLock' in navigator) {
             navigator.wakeLock.request('screen').then((result) => {
