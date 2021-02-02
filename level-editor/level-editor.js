@@ -59,6 +59,7 @@ function drawLevel(level)
         // black bars on  the left and right
         unit = (sceneHeight - 2 * PADDING) / level.height;
     }
+    level.scaleUnit = unit;
 
     // centre the level
     const leftOffset = (sceneWidth / unit - level.width) / 2;
@@ -180,13 +181,72 @@ function selectThing(level, thing) {
     level.svgSelectionBorder = svgSelBorder;
 
     updatePropsList(level, thing);
+
+    setUpSelectionDrag(svgSelBorder, level, thing);
 }
 
-function updatePropsList(level, thing) {
+function setUpSelectionDrag (svgSelBorder, level, thing) {
+    let initialScreenCoords = undefined;
+    let initialSvgCoords = undefined;
+    let initialThingPos = undefined;
+    let svgDelta = undefined;
+
+    function onMouseDown (ev) {
+        if (ev.button === 0) {
+            document.body.addEventListener("mousemove", onMouseMove);
+            document.body.addEventListener("mouseup", onMouseUp);
+        }
+        initialScreenCoords = { x: ev.clientX, y: ev.clientY };
+        initialSvgCoords = { x: svgSelBorder.x.baseVal.value,
+                             y: svgSelBorder.y.baseVal.value };
+        initialThingPos = thing.position;
+        svgDelta = {x: 0, y: 0};
+    }
+
+    function onMouseUp (ev) {
+        if (ev.button === 0) {
+            document.body.removeEventListener("mousemove", onMouseMove);
+            document.body.removeEventListener("mouseup", onMouseUp);
+        }
+    }
+
+    function onMouseMove (ev) {
+        if ((ev.buttons & 1) === 0) {
+            // The primary mouse button is not pressed!
+            // (in this case we should NOT be getting the event...)
+            onMouseUp({ button: 0, fakeEvent: true });
+            return;
+        }
+
+        const newScreenX = ev.clientX;
+        const newScreenY = ev.clientY;
+        const deltaScreenX = newScreenX - initialScreenCoords.x
+        const deltaScreenY = newScreenY - initialScreenCoords.y
+
+        svgDelta = { x: deltaScreenX / level.scaleUnit, 
+                     y: - deltaScreenY / level.scaleUnit };
+
+        const newSvgX = svgDelta.x + initialSvgCoords.x;
+        const newSvgY = svgDelta.y + initialSvgCoords.y;
+        svgSelBorder.setAttributeNS(null, "x", newSvgX);
+        svgSelBorder.setAttributeNS(null, "y", newSvgY);
+
+        thing.moveTo({x: initialThingPos.x + svgDelta.x,
+                      y: initialThingPos.y + svgDelta.y});
+        updatePropsList(level, thing, true);
+    }
+
+    svgSelBorder.addEventListener("mousedown", onMouseDown);
+}
+
+function updatePropsList(level, thing, force_refresh=false) {
     const propsTable = document.getElementById("properties-table");
 
-    if (propsTable.currentThing === thing) return;
-    else propsTable.currentThing = thing;
+    if (!force_refresh && (propsTable.currentThing === thing)) {
+        return;
+    } else {
+        propsTable.currentThing = thing;
+    }
 
     // Empty!
     while (propsTable.firstChild) {
@@ -226,17 +286,25 @@ function updatePropsList(level, thing) {
 }
 
 class PlayThing {
-    get elemForSelection() {
+    get elemForSelection () {
         return this.elem;
     }
-    updateAttrs(kwargs) {
+    updateAttrs (kwargs) {
         for (const argName in kwargs) {
             this[argName] = kwargs[argName];
         }
         this.refreshUI();
     }
-    refreshUI() {
+    refreshUI () {
         // pass
+    }
+    get position () {
+        return {x: this.x, y: this.y};
+    }
+    moveTo (pos) {
+        this.x = pos.x;
+        this.y = pos.y;
+        this.refreshUI();
     }
 }
 
@@ -380,9 +448,24 @@ const thingTypes = {
         }
         createSvg () {
             this.elem = document.createElementNS(SVGNS, "polyline");
+            this.refreshUI();
+            return this.elem;
+        }
+        refreshUI () {
             this.elem.setAttributeNS(null, "points",
                 this.nodes.map(n => `${n.x},${n.y}`).join(' '));
-            return this.elem;
+        }
+        get position () {
+            return {...this.nodes[0]};
+        }
+        moveTo (pos0) {
+            const deltaX = pos0.x - this.nodes[0].x;
+            const deltaY = pos0.y - this.nodes[0].y;
+            for (const node of this.nodes) {
+                node.x += deltaX;
+                node.y += deltaY;
+            }
+            this.refreshUI();
         }
     }
 }
