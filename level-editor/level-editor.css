@@ -1,0 +1,100 @@
+body {
+    margin: 0;
+    background: #333;
+    color: #eee;
+    height: 100vh;
+    font-size: 14px;
+    font-family: Cantarell;
+}
+
+input {
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    color: inherit;
+    border: 1px solid #555;
+}
+
+#main-ui {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+#level-scene {
+    flex-grow: 1;
+    
+    overflow: hidden;
+}
+
+#right-sidebar {
+    width: 350px;
+    height: 100%;
+    border-left: 1px solid #555;
+    background-color: #444;
+}
+
+.sidebar-window {
+    display: flex;
+    flex-direction: column;
+    height: 50%;
+    width: 100%;
+    flex-grow: 1;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #555;
+}
+
+.sidebar-window > header {
+    text-align: center;
+    background: #555;
+    padding: 2px;
+    padding-bottom: 3px;
+}
+
+#object-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow: auto;
+}
+
+#object-list > li {
+    border-bottom: 1px dotted #555;
+    padding: 2px 1em;
+    cursor: default;
+}
+
+#object-list > li:nth-child(even) {
+    background-color: #404040;
+}
+
+#object-list > li.selected {
+    color: #ffcd17;
+    background-color: #333;
+}
+
+#properties-table {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 100%;
+    width: 100%;
+    overflow: auto;   
+}
+
+#properties-table tr {
+    border-bottom: 1px dotted #555;
+    padding: 2px 1em;
+}
+
+#properties-table tr:nth-child(even) {
+    background-color: #404040;
+}
+
+#properties-table th {
+    width: 40%;
+    text-align: right;
+    padding-right: 1em;
+    font-weight: normal;
+    cursor: default;
+}
