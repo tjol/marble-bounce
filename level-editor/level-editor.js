@@ -20,6 +20,7 @@ function loadLevelFromDocument(dom_doc) {
         bottom: getFloatAttr(lvElem, "bottom"),
 
         objects: [],
+        undoStack: []
 
     };
 
@@ -117,6 +118,16 @@ function drawLevel(level)
     sceneSvg.appendChild(mainGrp);
 
     scene.appendChild(sceneSvg);
+
+    const statusPara = document.getElementById("status-msg");
+    sceneSvg.addEventListener("mousemove", ev => {
+        const x_px = ev.clientX;
+        const y_px = ev.clientY;
+        const x_coord = x_px / unit + (level.left - leftOffset);
+        const y_coord = (sceneHeight - y_px) / unit +
+                        (level.bottom - bottomOffset);
+        statusPara.textContent = `(${x_coord.toFixed(2)}, ${y_coord.toFixed(2)})`;
+    });
 }
 
 function setUpUI(level) {
@@ -208,6 +219,16 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
             document.body.removeEventListener("mousemove", onMouseMove);
             document.body.removeEventListener("mouseup", onMouseUp);
         }
+        // Set up undo
+        level.undoStack.unshift({
+            name: `Move ${thing.name}`,
+            undoCallback: () => {
+                thing.moveTo(initialThingPos);
+                if (level.selectedThing === thing) {
+                    selectThing(level, thing);
+                }
+            }
+        });
     }
 
     function onMouseMove (ev) {
@@ -260,7 +281,8 @@ function updatePropsList(level, thing, force_refresh=false) {
         const td = document.createElement("td");
         const input = document.createElement("input");
         th.textContent = attrName;
-        input.value = thing[attrName];
+        const origValue = thing[attrName];
+        input.value = origValue;
         input.type = "text";
         td.appendChild(input);
         tr.appendChild(th);
@@ -269,7 +291,7 @@ function updatePropsList(level, thing, force_refresh=false) {
 
         input.addEventListener("input", ev => {
             let newValue = undefined;
-            if ((typeof thing[attrName]) === "number") {
+            if ((typeof origValue) === "number") {
                 newValue = parseFloat(input.value);
                 if (isNaN(newValue)) {
                     return;
@@ -281,6 +303,17 @@ function updatePropsList(level, thing, force_refresh=false) {
             // SQUARE BRACKETS
             thing.updateAttrs({[attrName]: newValue});
             selectThing(level, thing);
+        });
+
+        input.addEventListener("change", ev => {
+            level.undoStack.unshift({
+                name: `Change ${thing.name}::${attrName}`,
+                undoCallback: () => {
+                    thing.updateAttrs({[attrName]: origValue});
+                    if (propsTable.currentThing === thing)
+                        selectThing(level, thing);
+                }
+            })
         });
     }
 }
@@ -470,6 +503,25 @@ const thingTypes = {
     }
 }
 
+function onKeyDown(ev) {
+    // Crtl+Z = undo
+    if (ev.ctrlKey && !ev.altKey && !ev.shiftKey &&
+            (ev.key == "z" || ev.key == "Z")) {
+        // Capture
+        ev.stopPropagation();
+        // Handle
+        actions.undo();
+    }
+}
+
+const actions = {
+    undo () {
+        if (level.undoStack.length > 0) {
+            level.undoStack.shift().undoCallback();
+        }
+    }
+}
+
 
 window.addEventListener("load", function (event) {
     const xhr = new XMLHttpRequest();
@@ -477,6 +529,7 @@ window.addEventListener("load", function (event) {
     xhr.onload = xhrEvt => {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             level = loadLevelFromDocument(xhr.responseXML);
+            document.addEventListener("keydown", onKeyDown);
             drawLevel(level);
             setUpUI(level);
         }

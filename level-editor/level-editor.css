@@ -15,16 +15,64 @@ input {
     border: 1px solid #555;
 }
 
+#top-toolbar, #status-bar {
+    width: 100%;
+    background-color: #444;
+    padding: 0;
+    margin: 0;
+    border: none;
+    min-height: 28px;
+    max-height: 28px;
+}
+
+#top-toolbar {
+    text-align: center;
+}
+
+#status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#status-bar > p {
+    padding: 0;
+    padding-bottom: 2px;
+    font-family: DejaVu Sans Mono;
+    font-size: 12px;
+}
+
+.toolbar-button {
+    border: none;
+    background: inherit;
+    padding: 2px;
+    margin: 0;
+}
+
+.toolbar-button:active {
+    opacity: 0.8;
+}
+
+.toolbar-button > img {
+    vertical-align: middle;
+    height: 24px;
+}
+
 #main-ui {
     display: flex;
     height: 100%;
     overflow: hidden;
 }
 
-#level-scene {
+#middle {
     flex-grow: 1;
-    
+    display: flex;
+    flex-direction: column;
+}
+
+#level-scene {
     overflow: hidden;
+    flex-grow: 1;
 }
 
 #right-sidebar {
@@ -49,6 +97,7 @@ input {
     background: #555;
     padding: 2px;
     padding-bottom: 3px;
+    min-height: 22px;
 }
 
 #object-list {

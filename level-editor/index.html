@@ -8,23 +8,24 @@
     </head>
     <body>
         <div id="main-ui">
-            <div id="level-scene">a</div>
+            <div id="middle">
+                <div id="top-toolbar">
+                    <button id="btn-undo" class="toolbar-button" onclick="actions.undo()">
+                        <img src="edit-undo-symbolic.svg">
+                    </button>
+                </div>
+                <div id="level-scene"></div>
+                <div id="status-bar"><p id="status-msg"></p></div>
+            </div>
             <div id="right-sidebar">
                 <div class="sidebar-window">
                     <header>objects</header>
                     <ul id="object-list">
-                        <!-- <li class="selected">level</li>
-                        <li>start</li> -->
                     </ul>
                 </div>
                 <div class="sidebar-window">
                     <header>properties</header>
                     <table id="properties-table">
-                        <!-- <tr><th>width</th><td><input type="text"/></td></tr>
-                        <tr><th>height</th><td><input type="text"/></td></tr>
-                        <tr><th>left</th><td><input type="text"/></td></tr>
-                        <tr><th>bottom</th><td><input type="text"/></td></tr> -->
-
                     </table>
                 </div>
             </div>
