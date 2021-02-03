@@ -25,13 +25,8 @@ function loadLevelFromDocument(dom_doc) {
     };
 
     for (const elem of lvElem.children) {
-        if (elem.tagName === "start") {
-            newLevel.start = {x: getFloatAttr(elem, "x"),
-                              y: getFloatAttr(elem, "y")};
-        } else {
-            const Thing = thingTypes[elem.tagName];
-            newLevel.objects.push(new Thing(elem));
-        }
+        const Thing = thingTypes[elem.tagName];
+        newLevel.objects.push(new Thing(elem));
     }
 
     return newLevel;
@@ -89,22 +84,6 @@ function drawLevel(level)
     mainGrp.setAttributeNS(null, "transform",
         `translate(0,${level.height + 2 * level.bottom}) scale(1,-1)`);
 
-    const startBall = document.createElementNS(SVGNS, "g");
-    const startBallBlackBit = document.createElementNS(SVGNS, "path");
-    startBallBlackBit.setAttributeNS(null, "fill", "black");
-    startBallBlackBit.setAttributeNS(null, "stroke", "none");
-    startBallBlackBit.setAttributeNS(null, "d",
-        `M${level.start.x - 0.1},${level.start.y} a0.1,0.1 0 0 0 0.2 0 z`);
-    const startBallRedBit = document.createElementNS(SVGNS, "path");
-    startBallRedBit.setAttributeNS(null, "fill", "red");
-    startBallRedBit.setAttributeNS(null, "stroke", "none");
-    startBallRedBit.setAttributeNS(null, "d",
-        `M${level.start.x - 0.1},${level.start.y} a0.1,0.1 0 0 1 0.2 0 z`);
-    startBall.appendChild(startBallBlackBit);
-    startBall.appendChild(startBallRedBit);
-    
-    mainGrp.appendChild(startBall);
-
 
     for (const thing of level.objects) {
         const thingSvg = thing.createSvg();
@@ -148,7 +127,6 @@ function setUpUI(level) {
     const counters = {};
 
     newListItem ("Level");
-    newListItem ("Start");
 
     for (const thing of level.objects) {
         const className = thing.constructor.name;
@@ -318,6 +296,22 @@ function updatePropsList(level, thing, force_refresh=false) {
     }
 }
 
+function level2xml(level) {
+    const xmlDoc = document.implementation.createDocument(null, "level", null);
+    const lvElem = xmlDoc.documentElement;
+    lvElem.setAttribute("width", level.width);
+    lvElem.setAttribute("height", level.height);
+    lvElem.setAttribute("left", level.left);
+    lvElem.setAttribute("bottom", level.bottom);
+
+    for (const thing of level.objects) {
+        lvElem.appendChild(thing.toXml(xmlDoc));
+    }
+
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(xmlDoc);
+}
+
 class PlayThing {
     get elemForSelection () {
         return this.elem;
@@ -342,6 +336,49 @@ class PlayThing {
 }
 
 const thingTypes = {
+    "start": class StartBall extends PlayThing {
+        constructor (xml) {
+            super(xml);
+            this.x = getFloatAttr(xml, "x");
+            this.y = getFloatAttr(xml, "y");
+            this.attrs = ["x", "y"];
+        }
+        createSvg () {
+            this.elem = document.createElementNS(SVGNS, "g");
+
+            this.blackBit = document.createElementNS(SVGNS, "circle");
+            this.blackBit.setAttributeNS(null, "fill", "black");
+            this.blackBit.setAttributeNS(null, "stroke", "none");
+
+
+            this.redBit = document.createElementNS(SVGNS, "path");
+            this.redBit.setAttributeNS(null, "fill", "red");
+            this.redBit.setAttributeNS(null, "stroke", "none");
+
+            this.elem.appendChild(this.blackBit);
+            this.elem.appendChild(this.redBit);
+
+            this.refreshUI ();
+
+            return this.elem;
+        }
+        refreshUI () {
+            this.blackBit.setAttributeNS(null, "cx", this.x);
+            this.blackBit.setAttributeNS(null, "cy", this.y);
+            this.blackBit.setAttributeNS(null, "r", 0.1);
+            this.redBit.setAttributeNS(null, "d",
+                `M${this.x - 0.1},${this.y} a0.1,0.1 0 0 1 0.2 0 z`);
+        }
+        get elemForSelection () {
+            return this.blackBit;
+        }
+        toXml (xmlDoc) {
+            const elem = xmlDoc.createElement("start");
+            elem.setAttribute("x", this.x);
+            elem.setAttribute("y", this.y);
+            return elem;
+        }
+    },
     "goal": class Goal extends PlayThing {
         constructor (xml) {
             super(xml);
@@ -403,6 +440,14 @@ const thingTypes = {
         get elemForSelection() {
             return this.boxElem;
         }
+        toXml (xmlDoc) {
+            const elem = xmlDoc.createElement("goal");
+            elem.setAttribute("x", this.x);
+            elem.setAttribute("y", this.y);
+            elem.setAttribute("width", this.width);
+            elem.setAttribute("height", this.height);
+            return elem;
+        }
     },
     "box": class Box extends PlayThing {
         constructor (xml) {
@@ -423,6 +468,14 @@ const thingTypes = {
             this.elem.setAttributeNS(null, "y", this.y - this.height/2);
             this.elem.setAttributeNS(null, "width", this.width);
             this.elem.setAttributeNS(null, "height", this.height);
+        }
+        toXml (xmlDoc) {
+            const elem = xmlDoc.createElement("box");
+            elem.setAttribute("x", this.x);
+            elem.setAttribute("y", this.y);
+            elem.setAttribute("width", this.width);
+            elem.setAttribute("height", this.height);
+            return elem;
         }
     },
     "cradle": class Cradle extends PlayThing {
@@ -447,6 +500,14 @@ const thingTypes = {
                  [this.x + this.width/2, this.y + this.height]]
                 .join(' '));
         }
+        toXml (xmlDoc) {
+            const elem = xmlDoc.createElement("cradle");
+            elem.setAttribute("x", this.x);
+            elem.setAttribute("y", this.y);
+            elem.setAttribute("width", this.width);
+            elem.setAttribute("height", this.height);
+            return elem;
+        }
     },
     "circle": class Circle extends PlayThing {
         constructor (xml) {
@@ -465,6 +526,13 @@ const thingTypes = {
             this.elem.setAttributeNS(null, "cx", this.x);
             this.elem.setAttributeNS(null, "cy", this.y);
             this.elem.setAttributeNS(null, "r", this.radius);
+        }
+        toXml (xmlDoc) {
+            const elem = xmlDoc.createElement("circle");
+            elem.setAttribute("x", this.x);
+            elem.setAttribute("y", this.y);
+            elem.setAttribute("r", this.radius);
+            return elem;
         }
     },
     "open-path": class OpenPath extends PlayThing {
@@ -500,6 +568,16 @@ const thingTypes = {
             }
             this.refreshUI();
         }
+        toXml (xmlDoc) {
+            const pathElem = xmlDoc.createElement("open-path");
+            for (const node of this.nodes) {
+                const nodeElem = xmlDoc.createElement("node");
+                nodeElem.setAttribute("x", node.x);
+                nodeElem.setAttribute("y", node.y);
+                pathElem.appendChild(nodeElem)
+            }
+            return pathElem;
+        }
     }
 }
 
@@ -519,6 +597,20 @@ const actions = {
         if (level.undoStack.length > 0) {
             level.undoStack.shift().undoCallback();
         }
+    },
+    download () {
+        const levelXml = level2xml(level);
+        const linkElem = document.createElement('a');
+        linkElem.setAttribute('href', 'data:application/xml;charset=utf-8,'
+                                   + encodeURIComponent(levelXml));
+        linkElem.setAttribute('download', 'level.xml');
+
+        linkElem.style.display = 'none';
+        document.body.appendChild(linkElem);
+
+        linkElem.click();
+
+        document.body.removeChild(linkElem);
     }
 }
 
