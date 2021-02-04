@@ -43,30 +43,39 @@ function drawLevel(level)
     const PADDING = 50;
 
     // build it up!
-    const sceneWidth = scene.clientWidth;
-    const sceneHeight = scene.clientHeight;
-    const sceneAspect = sceneWidth/sceneHeight;
-    const lvAspect = level.width/level.height;
+    let sceneWidth, sceneHeight, sceneAspect;
     let unit = 1;
-    if (lvAspect > sceneAspect) {
-        // black bars above and below
-        unit = (sceneWidth - 2*PADDING) / level.width;
-    } else {
-        // black bars on  the left and right
-        unit = (sceneHeight - 2 * PADDING) / level.height;
-    }
-    level.scaleUnit = unit;
+    let leftOffset, bottomOffset;
+    let viewBox;
+    
+    const calcLevelSize = () => {
+        sceneWidth = scene.clientWidth;
+        sceneHeight = scene.clientHeight;
+        sceneAspect = sceneWidth/sceneHeight;
+        const lvAspect = level.width/level.height;
+        if (lvAspect > sceneAspect) {
+            // black bars above and below
+            unit = (sceneWidth - 2*PADDING) / level.width;
+        } else {
+            // black bars on  the left and right
+            unit = (sceneHeight - 2 * PADDING) / level.height;
+        }
+        level.scaleUnit = unit;
 
-    // centre the level
-    const leftOffset = (sceneWidth / unit - level.width) / 2;
-    const bottomOffset = (sceneHeight / unit - level.height) / 2;
+        // centre the level
+        leftOffset = (sceneWidth / unit - level.width) / 2;
+        bottomOffset = (sceneHeight / unit - level.height) / 2;
+
+        viewBox = [level.left - leftOffset, level.bottom - bottomOffset,
+                   sceneWidth / unit, sceneHeight / unit].join(' ')
+    };
+    
+    calcLevelSize();
 
     const sceneSvg = document.createElementNS(SVGNS, "svg");
     sceneSvg.setAttributeNS(null, "width", sceneWidth);
     sceneSvg.setAttributeNS(null, "height", sceneHeight);
-    sceneSvg.setAttributeNS(null, "viewBox",
-        [level.left - leftOffset, level.bottom - bottomOffset,
-         sceneWidth / unit, sceneHeight / unit].join(' '));
+    sceneSvg.setAttributeNS(null, "viewBox",viewBox);
 
     const lvRect = document.createElementNS(SVGNS, "rect");
     lvRect.setAttributeNS(null, "width", level.width);
@@ -107,6 +116,13 @@ function drawLevel(level)
                         (level.bottom - bottomOffset);
         statusPara.textContent = `(${x_coord.toFixed(2)}, ${y_coord.toFixed(2)})`;
     });
+
+    window.addEventListener("resize", ev => {
+        calcLevelSize();
+        sceneSvg.setAttributeNS(null, "width", sceneWidth);
+        sceneSvg.setAttributeNS(null, "height", sceneHeight);
+        sceneSvg.setAttributeNS(null, "viewBox",viewBox);
+    });
 }
 
 function setUpUI(level) {
@@ -145,6 +161,7 @@ function selectThing(level, thing) {
         li.className = "";
     }
     thing.liElem.className = "selected";
+    thing.liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
 
     if (level.svgSelectionBorder != undefined) {
         level.svgSelectionBorder.remove();
@@ -291,7 +308,7 @@ function updatePropsList(level, thing, force_refresh=false) {
                     if (propsTable.currentThing === thing)
                         selectThing(level, thing);
                 }
-            })
+            });
         });
     }
 }
@@ -602,7 +619,7 @@ const actions = {
         const levelXml = level2xml(level);
         const linkElem = document.createElement('a');
         linkElem.setAttribute('href', 'data:application/xml;charset=utf-8,'
-                                   + encodeURIComponent(levelXml));
+                                      + encodeURIComponent(levelXml));
         linkElem.setAttribute('download', 'level.xml');
 
         linkElem.style.display = 'none';
@@ -615,7 +632,7 @@ const actions = {
 }
 
 
-window.addEventListener("load", function (event) {
+window.addEventListener("load", ev => {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", `../level2.xml`, true);
     xhr.onload = xhrEvt => {
