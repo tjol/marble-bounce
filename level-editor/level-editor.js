@@ -221,6 +221,7 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
                 thing.moveTo(initialThingPos);
                 if (level.selectedThing === thing) {
                     selectThing(level, thing);
+                    updatePropsList(level, thing, true);
                 }
             }
         });
@@ -366,7 +367,6 @@ const thingTypes = {
             this.blackBit = document.createElementNS(SVGNS, "circle");
             this.blackBit.setAttributeNS(null, "fill", "black");
             this.blackBit.setAttributeNS(null, "stroke", "none");
-
 
             this.redBit = document.createElementNS(SVGNS, "path");
             this.redBit.setAttributeNS(null, "fill", "red");
