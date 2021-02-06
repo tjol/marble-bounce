@@ -49,13 +49,15 @@ input {
     margin: 0;
 }
 
-.toolbar-button:active {
-    opacity: 0.8;
+.toolbar-button > svg {
+    vertical-align: middle;
+    --icon-colour: #eee;
+    transform: scale(1.5);
 }
 
-.toolbar-button > img {
-    vertical-align: middle;
-    height: 24px;
+.toolbar-button:active > svg,
+.toolbar-button:disabled > svg {
+    --icon-colour: #aaa;
 }
 
 #main-ui {

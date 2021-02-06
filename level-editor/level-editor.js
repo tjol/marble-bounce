@@ -20,8 +20,8 @@ function loadLevelFromDocument(dom_doc) {
         bottom: getFloatAttr(lvElem, "bottom"),
 
         objects: [],
-        undoStack: []
-
+        undoStack: [],
+        redoStack: []
     };
 
     for (const elem of lvElem.children) {
@@ -47,7 +47,7 @@ function drawLevel(level)
     let unit = 1;
     let leftOffset, bottomOffset;
     let viewBox;
-    
+
     const calcLevelSize = () => {
         sceneWidth = scene.clientWidth;
         sceneHeight = scene.clientHeight;
@@ -69,7 +69,7 @@ function drawLevel(level)
         viewBox = [level.left - leftOffset, level.bottom - bottomOffset,
                    sceneWidth / unit, sceneHeight / unit].join(' ')
     };
-    
+
     calcLevelSize();
 
     const sceneSvg = document.createElementNS(SVGNS, "svg");
@@ -131,7 +131,7 @@ function setUpUI(level) {
     while (ulObjList.firstChild) {
         ulObjList.removeChild(ulObjList.firstChild);
     }
-    
+
     function newListItem(name, onClick) {
         const li = document.createElement("li");
         li.textContent = name;
@@ -153,6 +153,13 @@ function setUpUI(level) {
         thing.name = objName;
         thing.liElem = newListItem(objName, ev => selectThing(level, thing));
     }
+
+    updateToolbar(level);
+}
+
+function updateToolbar(level) {
+    document.getElementById("btn-undo").disabled = (level.undoStack.length === 0);
+    document.getElementById("btn-redo").disabled = (level.redoStack.length === 0);
 }
 
 function selectThing(level, thing) {
@@ -215,7 +222,9 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
             document.body.removeEventListener("mouseup", onMouseUp);
         }
         // Set up undo
-        level.undoStack.unshift({
+        let undo, redo;
+        level.redoStack = [];
+        undo = {
             name: `Move ${thing.name}`,
             undoCallback: () => {
                 thing.moveTo(initialThingPos);
@@ -223,8 +232,25 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
                     selectThing(level, thing);
                     updatePropsList(level, thing, true);
                 }
+                level.redoStack.unshift(redo);
+                updateToolbar(level);
             }
-        });
+        };
+        redo = {
+            name: `Move ${thing.name}`,
+            redoCallback: () => {
+                thing.moveTo({x: initialThingPos.x + svgDelta.x,
+                              y: initialThingPos.y + svgDelta.y});
+                if (level.selectedThing === thing) {
+                    selectThing(level, thing);
+                    updatePropsList(level, thing, true);
+                }
+                level.undoStack.unshift(undo);
+                updateToolbar(level);
+            }
+        }
+        level.undoStack.unshift(undo);
+        updateToolbar(level);
     }
 
     function onMouseMove (ev) {
@@ -302,14 +328,33 @@ function updatePropsList(level, thing, force_refresh=false) {
         });
 
         input.addEventListener("change", ev => {
-            level.undoStack.unshift({
+            const newValue = thing[attrName];
+            let undo, redo;
+            undo = {
                 name: `Change ${thing.name}::${attrName}`,
                 undoCallback: () => {
                     thing.updateAttrs({[attrName]: origValue});
                     if (propsTable.currentThing === thing)
                         selectThing(level, thing);
+
+                    level.redoStack.unshift(redo);
+                    updateToolbar(level);
                 }
-            });
+            };
+            redo = {
+                name: `Change ${thing.name}::${attrName}`,
+                redoCallback: () => {
+                    thing.updateAttrs({[attrName]: newValue});
+                    if (propsTable.currentThing === thing)
+                        selectThing(level, thing);
+
+                    level.undoStack.unshift(undo);
+                    updateToolbar(level);
+                }
+            };
+
+            level.undoStack.unshift(undo);
+            updateToolbar(level);
         });
     }
 }
@@ -613,6 +658,11 @@ const actions = {
     undo () {
         if (level.undoStack.length > 0) {
             level.undoStack.shift().undoCallback();
+        }
+    },
+    redo () {
+        if (level.redoStack.length > 0) {
+            level.redoStack.shift().redoCallback();
         }
     },
     download () {

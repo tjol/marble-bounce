@@ -11,10 +11,17 @@
             <div id="middle">
                 <div id="top-toolbar">
                     <button id="btn-download" class="toolbar-button" onclick="actions.download()">
-                        <img src="document-save-symbolic.svg">
+                        <svg width="16" height="16"><use href="./save.svg#icon"/></svg>
                     </button>
                     <button id="btn-undo" class="toolbar-button" onclick="actions.undo()">
-                        <img src="edit-undo-symbolic.svg">
+                        <svg width="16" height="16"><use href="./undo.svg#icon"/></svg>
+                    </button>
+                    <button id="btn-redo" class="toolbar-button" onclick="actions.redo()">
+                        <svg width="16" height="16">
+                            <g transform="scale(-1,1) translate(-16,0)">
+                                <use href="./undo.svg#icon"/>
+                            </g>
+                        </svg>
                     </button>
                 </div>
                 <div id="level-scene"></div>
