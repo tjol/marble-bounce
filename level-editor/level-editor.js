@@ -415,8 +415,10 @@ function updatePropsList(level, thing, force_refresh=false) {
                 name: `Change ${thing.name}::${attrName}`,
                 undoCallback: () => {
                     thing.updateAttrs({[attrName]: origValue});
-                    if (propsTable.currentThing === thing)
+                    if (level.selectedThing === thing) {
                         selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
 
                     level.redoStack.push(redo);
                     updateToolbar(level);
@@ -426,8 +428,10 @@ function updatePropsList(level, thing, force_refresh=false) {
                 name: `Change ${thing.name}::${attrName}`,
                 redoCallback: () => {
                     thing.updateAttrs({[attrName]: newValue});
-                    if (propsTable.currentThing === thing)
+                    if (level.selectedThing === thing) {
                         selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
 
                     level.undoStack.push(undo);
                     updateToolbar(level);
