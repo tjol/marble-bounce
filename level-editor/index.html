@@ -38,11 +38,23 @@
           <header>objects</header>
           <ul id="object-list">
           </ul>
+          <template id="object-li-template">
+              <li>
+                <p></p>
+                <button class="list-button delete-button"
+                        title="Delete">
+                    <svg width="16" height="16"><use href="./delete.svg#icon"/></svg>
+                </button>
+              </li>
+          </template>
         </div>
         <div class="sidebar-window">
           <header>properties</header>
           <table id="properties-table">
           </table>
+          <template id="property-row-template">
+              <tr><th></th><td><input type="text"></td></tr>
+          </template>
         </div>
       </div>
     </div>

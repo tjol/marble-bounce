@@ -42,21 +42,26 @@ input {
     font-size: 12px;
 }
 
-.toolbar-button {
+.toolbar-button, .list-button {
     border: none;
     background: inherit;
     padding: 2px;
     margin: 0;
 }
 
-.toolbar-button > svg {
+.toolbar-button > svg, .list-button > svg {
     vertical-align: middle;
     --icon-colour: #eee;
+}
+
+.toolbar-button > svg {
     transform: scale(1.5);
 }
 
 .toolbar-button:active > svg,
-.toolbar-button:disabled > svg {
+.toolbar-button:disabled > svg,
+.list-button:active > svg,
+.list-button:disabled > svg {
     --icon-colour: #aaa;
 }
 
@@ -114,6 +119,13 @@ input {
     border-bottom: 1px dotted #555;
     padding: 2px 1em;
     cursor: default;
+    display: flex;
+}
+
+#object-list > li > p:first-child {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
 }
 
 #object-list > li:nth-child(even) {
@@ -149,4 +161,8 @@ input {
     padding-right: 1em;
     font-weight: normal;
     cursor: default;
+}
+
+.deleted {
+    display: none !important;
 }

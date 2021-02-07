@@ -147,12 +147,24 @@ function setUpUI(level) {
         ulObjList.removeChild(ulObjList.firstChild);
     }
 
-    function newListItem(name, onClick) {
-        const li = document.createElement("li");
-        li.textContent = name;
-        ulObjList.appendChild(li);
-        li.addEventListener("click", onClick);
-        return li;
+    const liTpl = document.getElementById("object-li-template");
+
+    function newListItem(name, onClick, onDeleteClick) {
+        const liFragment = liTpl.content.cloneNode(true);
+        const liElem = liFragment.querySelector("li");
+        liFragment.querySelector("p").textContent = name;
+        liElem.addEventListener("click", onClick);
+
+        const deleteButton = liFragment.querySelector(".delete-button");
+
+        if (onDeleteClick != null) {
+            deleteButton.addEventListener("click", onDeleteClick);
+        } else {
+            deleteButton.disabled = true;
+        }
+
+        ulObjList.appendChild(liFragment);
+        return ulObjList.lastElementChild; // JavaScript is CURSED. (and single-threaded)
     }
 
     const counters = {};
@@ -165,8 +177,15 @@ function setUpUI(level) {
             counters[className] = 0;
         }
         const objName = className + " " + (++counters[className]);
+        const onClick = ev => selectThing(level, thing);
+        const onDelete = thing.canBeDeleted
+                         ? ev => {
+                             ev.stopPropagation();
+                             deleteThing(level, thing);
+                         }
+                         : null;
         thing.name = objName;
-        thing.liElem = newListItem(objName, ev => selectThing(level, thing));
+        thing.liElem = newListItem(objName, onClick, onDelete);
     }
 
     updateToolbar(level);
@@ -180,11 +199,11 @@ function updateToolbar(level) {
 function selectThing(level, thing) {
     const ulObjList = document.getElementById("object-list");
     for (const li of ulObjList.children) {
-        li.className = "";
+        li.classList.remove("selected");
     }
 
-    const liElem = (thing === level) ? ulObjList.firstChild : thing.liElem;
-    liElem.className = "selected";
+    const liElem = (thing === level) ? ulObjList.firstElementChild : thing.liElem;
+    liElem.classList.add("selected");
     liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
 
     if (level.svgSelectionBorder != undefined) {
@@ -224,6 +243,38 @@ function selectThing(level, thing) {
     updatePropsList(level, thing);
 
     if (thing !== level) setUpSelectionDrag(svgSelBorder, level, thing);
+}
+
+function deleteThing (level, thing) {
+    if (thing === level.selectedThing) {
+        selectThing(level, level);
+    }
+
+    // Deleting is a lie
+
+    let undo, redo;
+    level.redoStack = [];
+    undo = {
+        name: `Delete ${thing.name}`,
+        undoCallback: () => {
+            thing.deleted = false;
+            thing.elem.classList.remove("deleted");
+            thing.liElem.classList.remove("deleted");
+            level.redoStack.push(redo);
+            updateToolbar(level);
+        }
+    };
+    redo = {
+        name: `Delete ${thing.name}`,
+        redoCallback: () => {
+            thing.deleted = true;
+            thing.elem.classList.add("deleted");
+            thing.liElem.classList.add("deleted");
+            level.undoStack.push(undo);
+            updateToolbar(level);
+        }
+    }
+    redo.redoCallback();
 }
 
 function setUpSelectionDrag (svgSelBorder, level, thing) {
@@ -331,20 +382,15 @@ function updatePropsList(level, thing, force_refresh=false) {
         attrList = thing.attrs;
     }
 
+    const rowTpl = document.getElementById("property-row-template");
     for (const attrName of attrList) {
         // Add the attribute to the list!
-        const tr = document.createElement("tr");
-        const th = document.createElement("th");
-        const td = document.createElement("td");
-        const input = document.createElement("input");
+        const row = rowTpl.content.cloneNode(true);
+        const th = row.querySelector("th");
+        const input = row.querySelector("input");
         th.textContent = attrName;
         const origValue = thing[attrName];
         input.value = origValue;
-        input.type = "text";
-        td.appendChild(input);
-        tr.appendChild(th);
-        tr.appendChild(td);
-        propsTable.appendChild(tr);
 
         input.addEventListener("input", ev => {
             let newValue = undefined;
@@ -391,6 +437,8 @@ function updatePropsList(level, thing, force_refresh=false) {
             level.undoStack.push(undo);
             updateToolbar(level);
         });
+
+        propsTable.appendChild(row);
     }
 }
 
@@ -403,7 +451,9 @@ function level2xml(level) {
     lvElem.setAttribute("bottom", level.bottom);
 
     for (const thing of level.objects) {
-        lvElem.appendChild(thing.toXml(xmlDoc));
+        if (!thing.deleted) {
+            lvElem.appendChild(thing.toXml(xmlDoc));
+        }
     }
 
     const serializer = new XMLSerializer();
@@ -430,6 +480,9 @@ class PlayThing {
         this.x = pos.x;
         this.y = pos.y;
         this.refreshUI();
+    }
+    get canBeDeleted () {
+        return true;
     }
 }
 
@@ -474,6 +527,9 @@ const thingTypes = {
             elem.setAttribute("x", this.x);
             elem.setAttribute("y", this.y);
             return elem;
+        }
+        get canBeDeleted () {
+            return false;
         }
     },
     "goal": class Goal extends PlayThing {
