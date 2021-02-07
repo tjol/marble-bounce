@@ -1,44 +1,50 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8"/>
-        <title>Marbles level editor</title>
-        <link rel="stylesheet" type="text/css" href="level-editor.css"/>
-        <script src="level-editor.js"></script>
-    </head>
-    <body>
-        <div id="main-ui">
-            <div id="middle">
-                <div id="top-toolbar">
-                    <button id="btn-download" class="toolbar-button" onclick="actions.download()">
-                        <svg width="16" height="16"><use href="./save.svg#icon"/></svg>
-                    </button>
-                    <button id="btn-undo" class="toolbar-button" onclick="actions.undo()">
-                        <svg width="16" height="16"><use href="./undo.svg#icon"/></svg>
-                    </button>
-                    <button id="btn-redo" class="toolbar-button" onclick="actions.redo()">
-                        <svg width="16" height="16">
-                            <g transform="scale(-1,1) translate(-16,0)">
-                                <use href="./undo.svg#icon"/>
-                            </g>
-                        </svg>
-                    </button>
-                </div>
-                <div id="level-scene"></div>
-                <div id="status-bar"><p id="status-msg"></p></div>
-            </div>
-            <div id="right-sidebar">
-                <div class="sidebar-window">
-                    <header>objects</header>
-                    <ul id="object-list">
-                    </ul>
-                </div>
-                <div class="sidebar-window">
-                    <header>properties</header>
-                    <table id="properties-table">
-                    </table>
-                </div>
-            </div>
+  <head>
+    <meta charset="UTF-8"/>
+    <title>Marbles level editor</title>
+    <link rel="stylesheet" type="text/css" href="level-editor.css"/>
+    <script src="level-editor.js"></script>
+  </head>
+  <body>
+    <div id="main-ui">
+      <div id="middle">
+        <div id="top-toolbar">
+          <button id="btn-download" class="toolbar-button"
+                  onclick="actions.download()"
+                  title="Download">
+            <svg width="16" height="16"><use href="./save.svg#icon"/></svg>
+          </button>
+          <button id="btn-undo" class="toolbar-button"
+                  onclick="actions.undo()"
+                  title="Undo">
+            <svg width="16" height="16"><use href="./undo.svg#icon"/></svg>
+          </button>
+          <button id="btn-redo" class="toolbar-button"
+                  onclick="actions.redo()"
+                  title="Redo">
+            <svg width="16" height="16">
+              <g transform="scale(-1,1) translate(-16,0)">
+                <use href="./undo.svg#icon"/>
+              </g>
+            </svg>
+          </button>
         </div>
-    </body>
+        <div id="level-scene"></div>
+        <div id="status-bar"><p id="status-msg"></p></div>
+      </div>
+      <div id="right-sidebar">
+        <div class="sidebar-window">
+          <header>objects</header>
+          <ul id="object-list">
+          </ul>
+        </div>
+        <div class="sidebar-window">
+          <header>properties</header>
+          <table id="properties-table">
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

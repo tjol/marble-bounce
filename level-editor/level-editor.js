@@ -86,6 +86,8 @@ function drawLevel(level)
     lvRect.setAttributeNS(null, "stroke", "black");
     lvRect.setAttributeNS(null, "stroke-width", "0.015");
 
+    level.lvRectSvg = lvRect;
+
     const mainGrp = document.createElementNS(SVGNS, "g");
     mainGrp.setAttributeNS(null, "fill", "none");
     mainGrp.setAttributeNS(null, "stroke", "black");
@@ -123,6 +125,19 @@ function drawLevel(level)
         sceneSvg.setAttributeNS(null, "height", sceneHeight);
         sceneSvg.setAttributeNS(null, "viewBox",viewBox);
     });
+
+    level.refreshUI = function () {
+        calcLevelSize();
+        sceneSvg.setAttributeNS(null, "width", sceneWidth);
+        sceneSvg.setAttributeNS(null, "height", sceneHeight);
+        sceneSvg.setAttributeNS(null, "viewBox",viewBox);
+        lvRect.setAttributeNS(null, "width", level.width);
+        lvRect.setAttributeNS(null, "height", level.height);
+        lvRect.setAttributeNS(null, "x", level.left);
+        lvRect.setAttributeNS(null, "y", level.bottom);
+    }
+
+    level.updateAttrs = PlayThing.prototype.updateAttrs;
 }
 
 function setUpUI(level) {
@@ -142,7 +157,7 @@ function setUpUI(level) {
 
     const counters = {};
 
-    newListItem ("Level");
+    newListItem("Level", ev => selectThing(level, level));
 
     for (const thing of level.objects) {
         const className = thing.constructor.name;
@@ -167,8 +182,10 @@ function selectThing(level, thing) {
     for (const li of ulObjList.children) {
         li.className = "";
     }
-    thing.liElem.className = "selected";
-    thing.liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
+
+    const liElem = (thing === level) ? ulObjList.firstChild : thing.liElem;
+    liElem.className = "selected";
+    liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
 
     if (level.svgSelectionBorder != undefined) {
         level.svgSelectionBorder.remove();
@@ -176,26 +193,37 @@ function selectThing(level, thing) {
 
     level.selectedThing = thing;
 
-    const svgElem = thing.elemForSelection;
-    const svgGrp = svgElem.parentElement;
     const svgSelBorder = document.createElementNS(SVGNS, "rect");
-    const bbox = svgElem.getBBox();
-    svgSelBorder.setAttributeNS(null, "x", bbox.x - 0.02);
-    svgSelBorder.setAttributeNS(null, "y", bbox.y - 0.02);
-    svgSelBorder.setAttributeNS(null, "width", bbox.width + 0.04);
-    svgSelBorder.setAttributeNS(null, "height", bbox.height + 0.04);
+    const svgElem = thing === level ? level.lvRectSvg : thing.elemForSelection;
+    const svgGrp = svgElem.parentElement;
+
+    if (thing === level) {
+        svgSelBorder.setAttributeNS(null, "x", level.lvRectSvg.getAttribute("x"));
+        svgSelBorder.setAttributeNS(null, "y", level.lvRectSvg.getAttribute("y"));
+        svgSelBorder.setAttributeNS(null, "width", level.lvRectSvg.getAttribute("width"));
+        svgSelBorder.setAttributeNS(null, "height", level.lvRectSvg.getAttribute("height"));
+        svgSelBorder.setAttributeNS(null, "fill", "none");
+    } else {
+        const bbox = svgElem.getBBox();
+        svgSelBorder.setAttributeNS(null, "x", bbox.x - 0.02);
+        svgSelBorder.setAttributeNS(null, "y", bbox.y - 0.02);
+        svgSelBorder.setAttributeNS(null, "width", bbox.width + 0.04);
+        svgSelBorder.setAttributeNS(null, "height", bbox.height + 0.04);
+        svgSelBorder.setAttributeNS(null, "stroke-dasharray", "0.05,0.05");
+        svgSelBorder.setAttributeNS(null, "fill", "#ffcd17");
+        svgSelBorder.setAttributeNS(null, "fill-opacity", "0.1")
+    }
+
     svgSelBorder.setAttributeNS(null, "stroke", "#ffcd17");
     svgSelBorder.setAttributeNS(null, "stroke-width", "0.02");
-    svgSelBorder.setAttributeNS(null, "stroke-dasharray", "0.05,0.05");
-    svgSelBorder.setAttributeNS(null, "fill", "#ffcd17");
-    svgSelBorder.setAttributeNS(null, "fill-opacity", "0.1")
+
     svgGrp.appendChild(svgSelBorder);
 
     level.svgSelectionBorder = svgSelBorder;
 
     updatePropsList(level, thing);
 
-    setUpSelectionDrag(svgSelBorder, level, thing);
+    if (thing !== level) setUpSelectionDrag(svgSelBorder, level, thing);
 }
 
 function setUpSelectionDrag (svgSelBorder, level, thing) {
@@ -232,7 +260,7 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
                     selectThing(level, thing);
                     updatePropsList(level, thing, true);
                 }
-                level.redoStack.unshift(redo);
+                level.redoStack.push(redo);
                 updateToolbar(level);
             }
         };
@@ -245,11 +273,11 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
                     selectThing(level, thing);
                     updatePropsList(level, thing, true);
                 }
-                level.undoStack.unshift(undo);
+                level.undoStack.push(undo);
                 updateToolbar(level);
             }
         }
-        level.undoStack.unshift(undo);
+        level.undoStack.push(undo);
         updateToolbar(level);
     }
 
@@ -296,7 +324,14 @@ function updatePropsList(level, thing, force_refresh=false) {
         propsTable.removeChild(propsTable.firstChild);
     }
 
-    for (const attrName of thing.attrs) {
+    let attrList;
+    if (thing === level) {
+        attrList = ["width", "height", "left", "bottom"];
+    } else {
+        attrList = thing.attrs;
+    }
+
+    for (const attrName of attrList) {
         // Add the attribute to the list!
         const tr = document.createElement("tr");
         const th = document.createElement("th");
@@ -337,7 +372,7 @@ function updatePropsList(level, thing, force_refresh=false) {
                     if (propsTable.currentThing === thing)
                         selectThing(level, thing);
 
-                    level.redoStack.unshift(redo);
+                    level.redoStack.push(redo);
                     updateToolbar(level);
                 }
             };
@@ -348,12 +383,12 @@ function updatePropsList(level, thing, force_refresh=false) {
                     if (propsTable.currentThing === thing)
                         selectThing(level, thing);
 
-                    level.undoStack.unshift(undo);
+                    level.undoStack.push(undo);
                     updateToolbar(level);
                 }
             };
 
-            level.undoStack.unshift(undo);
+            level.undoStack.push(undo);
             updateToolbar(level);
         });
     }
@@ -644,25 +679,30 @@ const thingTypes = {
 }
 
 function onKeyDown(ev) {
-    // Crtl+Z = undo
-    if (ev.ctrlKey && !ev.altKey && !ev.shiftKey &&
+    if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && // Ctrl+Z
             (ev.key == "z" || ev.key == "Z")) {
         // Capture
         ev.stopPropagation();
         // Handle
         actions.undo();
+    } else if ((ev.ctrlKey && !ev.altKey && ev.shiftKey && // Ctrl+Shift+Z
+                (ev.key == "z" || ev.key == "Z"))
+            || (ev.ctrlKey && !ev.altKey && !ev.shiftKey && // Ctrl+Y
+                (ev.key == "y" || ev.key == "Y"))) {
+        ev.stopPropagation();
+        actions.redo();
     }
 }
 
 const actions = {
     undo () {
         if (level.undoStack.length > 0) {
-            level.undoStack.shift().undoCallback();
+            level.undoStack.pop().undoCallback();
         }
     },
     redo () {
         if (level.redoStack.length > 0) {
-            level.redoStack.shift().redoCallback();
+            level.redoStack.pop().redoCallback();
         }
     },
     download () {
