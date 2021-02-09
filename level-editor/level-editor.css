@@ -83,19 +83,27 @@ input {
     flex-grow: 1;
 }
 
+#left-sidebar {
+    height: 100%;
+    border-right: 1px solid #555;
+    background-color: #444;
+}
+
 #right-sidebar {
     width: 350px;
     height: 100%;
     border-left: 1px solid #555;
     background-color: #444;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-window {
+    height: 100%;
+    flex-shrink: 1;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 50%;
-    width: 100%;
-    flex-grow: 1;
     border-top: 1px solid #555;
     border-bottom: 1px solid #555;
 }
@@ -106,6 +114,31 @@ input {
     padding: 2px;
     padding-bottom: 3px;
     min-height: 22px;
+}
+
+#add-list {
+    /* display: flex;
+    flex-wrap: wrap;
+    width: 128px; */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow: auto;
+}
+
+/* #add-list > li {
+    display: block;
+} */
+
+#add-list > li > svg {
+    fill: none;
+    stroke: #eee;
+    stroke-width: 2px;
+}
+
+#add-list > li > svg .filled {
+    fill: #eee;
+    stroke: none;
 }
 
 #object-list {

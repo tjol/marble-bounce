@@ -348,10 +348,14 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
         svgDelta = { x: deltaScreenX / level.scaleUnit, 
                      y: - deltaScreenY / level.scaleUnit };
 
-        const newSvgX = svgDelta.x + initialSvgCoords.x;
-        const newSvgY = svgDelta.y + initialSvgCoords.y;
-        svgSelBorder.setAttributeNS(null, "x", newSvgX);
-        svgSelBorder.setAttributeNS(null, "y", newSvgY);
+        if (!thing.elem.contains(svgSelBorder)) {
+        // things rendered as <g> elements kinda-sorta take ownership of the
+        // selection border.
+            const newSvgX = svgDelta.x + initialSvgCoords.x;
+            const newSvgY = svgDelta.y + initialSvgCoords.y;
+            svgSelBorder.setAttributeNS(null, "x", newSvgX);
+            svgSelBorder.setAttributeNS(null, "y", newSvgY);
+        }
 
         thing.moveTo({x: initialThingPos.x + svgDelta.x,
                       y: initialThingPos.y + svgDelta.y});
@@ -504,10 +508,15 @@ const thingTypes = {
             this.blackBit = document.createElementNS(SVGNS, "circle");
             this.blackBit.setAttributeNS(null, "fill", "black");
             this.blackBit.setAttributeNS(null, "stroke", "none");
+            this.blackBit.setAttributeNS(null, "cx", "0");
+            this.blackBit.setAttributeNS(null, "cy", "0");
+            this.blackBit.setAttributeNS(null, "r", 0.1);
 
             this.redBit = document.createElementNS(SVGNS, "path");
             this.redBit.setAttributeNS(null, "fill", "red");
             this.redBit.setAttributeNS(null, "stroke", "none");
+            this.redBit.setAttributeNS(null, "d",
+                `M-0.1,0 a0.1,0.1 0 0 1 0.2 0 z`);
 
             this.elem.appendChild(this.blackBit);
             this.elem.appendChild(this.redBit);
@@ -517,11 +526,8 @@ const thingTypes = {
             return this.elem;
         }
         refreshUI () {
-            this.blackBit.setAttributeNS(null, "cx", this.x);
-            this.blackBit.setAttributeNS(null, "cy", this.y);
-            this.blackBit.setAttributeNS(null, "r", 0.1);
-            this.redBit.setAttributeNS(null, "d",
-                `M${this.x - 0.1},${this.y} a0.1,0.1 0 0 1 0.2 0 z`);
+            this.elem.setAttributeNS(null, "transform",
+                `translate(${this.x},${this.y})`);
         }
         get elemForSelection () {
             return this.blackBit;
@@ -586,6 +592,12 @@ const thingTypes = {
                     }
                 }
             }
+        }
+        moveTo (pos) {
+            this.x = pos.x;
+            this.y = pos.y;
+            this.elem.setAttributeNS(null, "transform",
+                `translate(${this.x - this.width/2},${this.y - this.height/2})`);
         }
         updateAttrs (kwargs) {
             if (kwargs.width === 0 || kwargs.height === 0) {
@@ -696,13 +708,31 @@ const thingTypes = {
         constructor (xml) {
             super(xml);
             this.nodes = [];
-            for (const nodeXml of xml.children) {
-                this.nodes.push({
-                    x: getFloatAttr(nodeXml, "x"),
-                    y: getFloatAttr(nodeXml, "y")
-                });
-            }
             this.attrs = [];
+            for (let i = 0; i < xml.childElementCount; ++i) {
+                const nodeXml = xml.children[i];
+                this.addNode(i, getFloatAttr(nodeXml, "x"),
+                                getFloatAttr(nodeXml, "y"));
+            }
+        }
+        addNode(i, x, y) {
+            const n = { x, y };
+            this.nodes.push(n);
+            this.attrs.push(`x ${i+1}`, `y ${i+1}`)
+            Object.defineProperties(this, {
+                [`x ${i+1}`]: {
+                    get: () => n.x,
+                    set: (val) => n.x = val,
+                    configurable: false,
+                    enumerable: false
+                },
+                [`y ${i+1}`]: {
+                    get: () => n.y,
+                    set: (val) => n.y = val,
+                    configurable: false,
+                    enumerable: false
+                },
+            });
         }
         createSvg () {
             this.elem = document.createElementNS(SVGNS, "polyline");
@@ -751,6 +781,9 @@ function onKeyDown(ev) {
                 (ev.key == "y" || ev.key == "Y"))) {
         ev.stopPropagation();
         actions.redo();
+    } else if (ev.key == "Delete") {
+        ev.stopPropagation();
+        actions.deleteThing();
     }
 }
 
@@ -778,6 +811,11 @@ const actions = {
         linkElem.click();
 
         document.body.removeChild(linkElem);
+    },
+    deleteThing () {
+        if (level.selectedThing.canBeDeleted) {
+            deleteThing(level, level.selectedThing);
+        }
     }
 }
 
