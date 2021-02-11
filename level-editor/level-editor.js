@@ -448,9 +448,120 @@ function updatePropsList(level, thing, force_refresh=false) {
 
         propsTable.appendChild(row);
     }
+
+    if (thing.canAddNode) {
+        const addBtnRowTpl = document.getElementById("add-node-row-template");
+        const row = addBtnRowTpl.content.cloneNode(true);
+        const btn = row.querySelector("button");
+        btn.addEventListener("click", ev => startAddNode(level, thing, () => {
+            selectThing(level, thing);
+            updatePropsList(level, thing, true);
+        }, { registerUndoRedo: true }));
+        propsTable.appendChild(row);
+    }
 }
 
-function level2xml(level) {
+function startAddNode (level, thing, doneCb, params) {
+    // Right! We're taking over.
+    const svg = document.getElementById("level-scene").querySelector("svg");
+    const mainGrp = svg.querySelector("g");
+    const svgClientBBox = svg.getBoundingClientRect();
+    const lastNode = thing.nodes[thing.nodes.length - 1];
+
+    document.body.style.cursor = "crosshair";
+    const line = document.createElementNS(SVGNS, "line");
+    line.setAttributeNS(null, "x1", lastNode.x);
+    line.setAttributeNS(null, "y1", lastNode.y);
+    line.setAttributeNS(null, "x2", lastNode.x);
+    line.setAttributeNS(null, "y2", lastNode.y);
+    line.setAttributeNS(null, "stroke", "#ffcd17");
+    mainGrp.appendChild(line);
+
+    if (level.svgSelectionBorder != undefined) {
+        level.svgSelectionBorder.remove();
+    }
+
+    const onMouseMove = ev => {
+        const x_px = ev.clientX;
+        const y_px = ev.clientY;
+        const x_coord = (x_px - svgClientBBox.left) / level.scaleUnit
+                        + svg.viewBox.baseVal.x;
+        const y_coord = (svgClientBBox.bottom - y_px) / level.scaleUnit
+                        + svg.viewBox.baseVal.y;
+
+        line.setAttributeNS(null, "x2", x_coord);
+        line.setAttributeNS(null, "y2", y_coord);
+
+    };
+    const onClick = ev => {
+        ev.stopPropagation();
+
+        const newNode = { x: line.x2.baseVal.value, 
+                          y: line.y2.baseVal.value }
+
+        thing.pushNode(newNode.x, newNode.y);
+        thing.refreshUI();
+
+        line.remove();
+        document.removeEventListener("keydown", onKeyDown, { capture: true });
+        document.body.removeEventListener("mousemove", onMouseMove, { capture: true });
+        document.body.removeEventListener("click", onClick, { capture: true });
+        document.body.style.cursor = null;
+
+        if (params.registerUndoRedo) {
+            let undo, redo;
+            level.redoStack = [];
+            undo = {
+                name: `Add Node`,
+                undoCallback: () => {
+                    thing.popNode();
+                    thing.refreshUI();
+                    if (level.selectedThing === thing) {
+                        selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
+                    level.redoStack.push(redo);
+                    updateToolbar(level);
+                }
+            };
+            redo = {
+                name: `Add Node`,
+                redoCallback: () => {
+                    thing.pushNode(newNode.x, newNode.y);
+                    thing.refreshUI();
+                    if (level.selectedThing === thing) {
+                        selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
+                    level.undoStack.push(undo);
+                    updateToolbar(level);
+                }
+            }
+            level.undoStack.push(undo);
+            updateToolbar(level);
+        }
+
+        doneCb(false);
+    };
+    const onKeyDown = ev => {
+        if (ev.key == "Escape") {
+            ev.stopPropagation();
+            // Stop this madness
+            line.remove();
+            document.removeEventListener("keydown", onKeyDown, { capture: true });
+            document.body.removeEventListener("mousemove", onMouseMove, { capture: true });
+            document.body.removeEventListener("click", onClick, { capture: true });
+            document.body.style.cursor = null;
+            doneCb(false);
+        }
+    }
+
+    document.body.addEventListener("mousemove", onMouseMove, { capture: true });
+    document.body.addEventListener("click", onClick, { capture: true });
+    document.addEventListener("keydown", onKeyDown, { capture: true });
+}
+
+function level2xml (level) {
     const xmlDoc = document.implementation.createDocument(null, "level", null);
     const lvElem = xmlDoc.documentElement;
     lvElem.setAttribute("width", level.width);
@@ -709,13 +820,14 @@ const thingTypes = {
             super(xml);
             this.nodes = [];
             this.attrs = [];
-            for (let i = 0; i < xml.childElementCount; ++i) {
-                const nodeXml = xml.children[i];
-                this.addNode(i, getFloatAttr(nodeXml, "x"),
-                                getFloatAttr(nodeXml, "y"));
+            for (const nodeXml of xml.children) {
+                this.pushNode(getFloatAttr(nodeXml, "x"),
+                              getFloatAttr(nodeXml, "y"));
             }
+            this.canAddNode = true;
         }
-        addNode(i, x, y) {
+        pushNode(x, y) {
+            const i = this.nodes.length;
             const n = { x, y };
             this.nodes.push(n);
             this.attrs.push(`x ${i+1}`, `y ${i+1}`)
@@ -723,16 +835,24 @@ const thingTypes = {
                 [`x ${i+1}`]: {
                     get: () => n.x,
                     set: (val) => n.x = val,
-                    configurable: false,
+                    configurable: true,
                     enumerable: false
                 },
                 [`y ${i+1}`]: {
                     get: () => n.y,
                     set: (val) => n.y = val,
-                    configurable: false,
+                    configurable: true,
                     enumerable: false
                 },
             });
+        }
+        popNode() {
+            const i = this.nodes.length - 1;
+            this.nodes.pop();
+            this.attrs.pop();
+            this.attrs.pop();
+            delete this[`x ${i+1}`];
+            delete this[`y ${i+1}`];
         }
         createSvg () {
             this.elem = document.createElementNS(SVGNS, "polyline");

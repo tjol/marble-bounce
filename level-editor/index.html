@@ -91,10 +91,18 @@
         </div>
         <div class="sidebar-window">
           <header>properties</header>
-          <table id="properties-table">
-          </table>
+          <div id="properties-table-wrapper"><!-- cursed -->
+            <table id="properties-table">
+            </table>
+          </div>
           <template id="property-row-template">
               <tr><th></th><td><input type="text"></td></tr>
+          </template>
+          <template id="add-node-row-template">
+            <tr><td></td><td><button class="list-button button-with-text">
+              <svg width="16" height="16"><use href="./add.svg#icon"/></svg>
+              Add Node
+            </button></td></tr>
           </template>
         </div>
       </div>

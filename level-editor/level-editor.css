@@ -65,6 +65,21 @@ input {
     --icon-colour: #aaa;
 }
 
+.list-button.button-with-text {
+    color: #eee;
+    background-color: #555;
+    border-radius: 3px;
+    padding: 2px 12px;
+}
+.list-button.button-with-text:active {
+    color: #aaa;
+    border: none;
+}
+.list-button.button-with-text > svg {
+    position: relative;
+    top: -1px;
+}
+
 #main-ui {
     display: flex;
     height: 100%;
@@ -170,13 +185,18 @@ input {
     background-color: #333;
 }
 
+/* This is needed because HTML
+tables apparently can't be made to scroll
+on their own */
+#properties-table-wrapper {
+    overflow: auto;
+    height: 100%;
+}
+
 #properties-table {
-    list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 100%;
     width: 100%;
-    overflow: auto;   
 }
 
 #properties-table tr {
