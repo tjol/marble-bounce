@@ -293,43 +293,52 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
                              y: svgSelBorder.y.baseVal.value };
         initialThingPos = thing.position;
         svgDelta = {x: 0, y: 0};
+        svgSelBorder.style.cursor = "grabbing";
     }
 
     function onMouseUp (ev) {
         if (ev.button === 0) {
             document.body.removeEventListener("mousemove", onMouseMove);
             document.body.removeEventListener("mouseup", onMouseUp);
-        }
-        // Set up undo
-        let undo, redo;
-        level.redoStack = [];
-        undo = {
-            name: `Move ${thing.name}`,
-            undoCallback: () => {
-                thing.moveTo(initialThingPos);
-                if (level.selectedThing === thing) {
-                    selectThing(level, thing);
-                    updatePropsList(level, thing, true);
-                }
-                level.redoStack.push(redo);
-                updateToolbar(level);
+
+            svgSelBorder.style.cursor = null;
+
+            if (level.selectedThing === thing) {
+                selectThing(level, thing);
+                updatePropsList(level, thing, true);
             }
-        };
-        redo = {
-            name: `Move ${thing.name}`,
-            redoCallback: () => {
-                thing.moveTo({x: initialThingPos.x + svgDelta.x,
-                              y: initialThingPos.y + svgDelta.y});
-                if (level.selectedThing === thing) {
-                    selectThing(level, thing);
-                    updatePropsList(level, thing, true);
+
+            // Set up undo
+            let undo, redo;
+            level.redoStack = [];
+            undo = {
+                name: `Move ${thing.name}`,
+                undoCallback: () => {
+                    thing.moveTo(initialThingPos);
+                    if (level.selectedThing === thing) {
+                        selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
+                    level.redoStack.push(redo);
+                    updateToolbar(level);
                 }
-                level.undoStack.push(undo);
-                updateToolbar(level);
+            };
+            redo = {
+                name: `Move ${thing.name}`,
+                redoCallback: () => {
+                    thing.moveTo({x: initialThingPos.x + svgDelta.x,
+                                y: initialThingPos.y + svgDelta.y});
+                    if (level.selectedThing === thing) {
+                        selectThing(level, thing);
+                        updatePropsList(level, thing, true);
+                    }
+                    level.undoStack.push(undo);
+                    updateToolbar(level);
+                }
             }
+            level.undoStack.push(undo);
+            updateToolbar(level);
         }
-        level.undoStack.push(undo);
-        updateToolbar(level);
     }
 
     function onMouseMove (ev) {
@@ -345,7 +354,7 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
         const deltaScreenX = newScreenX - initialScreenCoords.x
         const deltaScreenY = newScreenY - initialScreenCoords.y
 
-        svgDelta = { x: deltaScreenX / level.scaleUnit, 
+        svgDelta = { x: deltaScreenX / level.scaleUnit,
                      y: - deltaScreenY / level.scaleUnit };
 
         if (!thing.elem.contains(svgSelBorder)) {
@@ -363,6 +372,7 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
     }
 
     svgSelBorder.addEventListener("mousedown", onMouseDown);
+    svgSelBorder.style.cursor = "grab";
 }
 
 function updatePropsList(level, thing, force_refresh=false) {
@@ -497,7 +507,7 @@ function startAddNode (level, thing, doneCb, params) {
     const onClick = ev => {
         ev.stopPropagation();
 
-        const newNode = { x: line.x2.baseVal.value, 
+        const newNode = { x: line.x2.baseVal.value,
                           y: line.y2.baseVal.value }
 
         thing.pushNode(newNode.x, newNode.y);
@@ -542,7 +552,7 @@ function startAddNode (level, thing, doneCb, params) {
             updateToolbar(level);
         }
 
-        doneCb(false);
+        doneCb(true);
     };
     const onKeyDown = ev => {
         if (ev.key == "Escape") {
