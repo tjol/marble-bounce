@@ -415,6 +415,7 @@ function updatePropsList(level, thing, force_refresh=false) {
         input.addEventListener("change", ev => {
             const newValue = thing[attrName];
             let undo, redo;
+            level.redoStack = [];
             undo = {
                 name: `Change ${thing.name}::${attrName}`,
                 undoCallback: () => {
