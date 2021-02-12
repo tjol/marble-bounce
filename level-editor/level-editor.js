@@ -246,10 +246,6 @@ function selectThing(level, thing) {
 }
 
 function deleteThing (level, thing) {
-    if (thing === level.selectedThing) {
-        selectThing(level, level);
-    }
-
     // Deleting is a lie
 
     let undo, redo;
@@ -267,6 +263,9 @@ function deleteThing (level, thing) {
     redo = {
         name: `Delete ${thing.name}`,
         redoCallback: () => {
+            if (thing === level.selectedThing) {
+                selectThing(level, level);
+            }
             thing.deleted = true;
             thing.elem.classList.add("deleted");
             thing.liElem.classList.add("deleted");
@@ -275,6 +274,42 @@ function deleteThing (level, thing) {
         }
     }
     redo.redoCallback();
+}
+
+function registerEditUndoRedo (level, thing, name, undoFn, redoFn, redoNow)
+{
+    let undo, redo;
+    level.redoStack = [];
+    undo = {
+        name,
+        undoCallback: () => {
+            undoFn();
+            if (level.selectedThing === thing) {
+                selectThing(level, thing);
+                updatePropsList(level, thing, true);
+            }
+            level.redoStack.push(redo);
+            updateToolbar(level);
+        }
+    };
+    redo = {
+        name,
+        redoCallback: () => {
+            redoFn();
+            if (level.selectedThing === thing) {
+                selectThing(level, thing);
+                updatePropsList(level, thing, true);
+            }
+            level.undoStack.push(undo);
+            updateToolbar(level);
+        }
+    }
+    if (redoNow) {
+        redo.redoCallback();
+    } else {
+        level.undoStack.push(undo);
+        updateToolbar(level);
+    }
 }
 
 function setUpSelectionDrag (svgSelBorder, level, thing) {
@@ -309,35 +344,10 @@ function setUpSelectionDrag (svgSelBorder, level, thing) {
             }
 
             // Set up undo
-            let undo, redo;
-            level.redoStack = [];
-            undo = {
-                name: `Move ${thing.name}`,
-                undoCallback: () => {
-                    thing.moveTo(initialThingPos);
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-                    level.redoStack.push(redo);
-                    updateToolbar(level);
-                }
-            };
-            redo = {
-                name: `Move ${thing.name}`,
-                redoCallback: () => {
-                    thing.moveTo({x: initialThingPos.x + svgDelta.x,
-                                y: initialThingPos.y + svgDelta.y});
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-                    level.undoStack.push(undo);
-                    updateToolbar(level);
-                }
-            }
-            level.undoStack.push(undo);
-            updateToolbar(level);
+            registerEditUndoRedo(level, thing, `Move ${thing.name}`,
+                () => thing.moveTo(initialThingPos),
+                () => thing.moveTo({x: initialThingPos.x + svgDelta.x,
+                                    y: initialThingPos.y + svgDelta.y}));
         }
     }
 
@@ -424,37 +434,9 @@ function updatePropsList(level, thing, force_refresh=false) {
 
         input.addEventListener("change", ev => {
             const newValue = thing[attrName];
-            let undo, redo;
-            level.redoStack = [];
-            undo = {
-                name: `Change ${thing.name}::${attrName}`,
-                undoCallback: () => {
-                    thing.updateAttrs({[attrName]: origValue});
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-
-                    level.redoStack.push(redo);
-                    updateToolbar(level);
-                }
-            };
-            redo = {
-                name: `Change ${thing.name}::${attrName}`,
-                redoCallback: () => {
-                    thing.updateAttrs({[attrName]: newValue});
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-
-                    level.undoStack.push(undo);
-                    updateToolbar(level);
-                }
-            };
-
-            level.undoStack.push(undo);
-            updateToolbar(level);
+            registerEditUndoRedo(level, thing, `Change ${thing.name}::${attrName}`,
+                () => thing.updateAttrs({[attrName]: origValue}),
+                () => thing.updateAttrs({[attrName]: newValue}));
         });
 
         propsTable.appendChild(row);
@@ -520,36 +502,15 @@ function startAddNode (level, thing, doneCb, params) {
         document.body.style.cursor = null;
 
         if (params.registerUndoRedo) {
-            let undo, redo;
-            level.redoStack = [];
-            undo = {
-                name: `Add Node`,
-                undoCallback: () => {
+            registerEditUndoRedo(level, thing, "Add Node",
+                () => {
                     thing.popNode();
                     thing.refreshUI();
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-                    level.redoStack.push(redo);
-                    updateToolbar(level);
-                }
-            };
-            redo = {
-                name: `Add Node`,
-                redoCallback: () => {
+                },
+                () => {
                     thing.pushNode(newNode.x, newNode.y);
                     thing.refreshUI();
-                    if (level.selectedThing === thing) {
-                        selectThing(level, thing);
-                        updatePropsList(level, thing, true);
-                    }
-                    level.undoStack.push(undo);
-                    updateToolbar(level);
-                }
-            }
-            level.undoStack.push(undo);
-            updateToolbar(level);
+                });
         }
 
         doneCb(true);
