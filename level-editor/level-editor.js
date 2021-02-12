@@ -202,47 +202,49 @@ function selectThing(level, thing) {
         li.classList.remove("selected");
     }
 
-    const liElem = (thing === level) ? ulObjList.firstElementChild : thing.liElem;
-    liElem.classList.add("selected");
-    liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
-
     if (level.svgSelectionBorder != undefined) {
         level.svgSelectionBorder.remove();
     }
 
     level.selectedThing = thing;
 
-    const svgSelBorder = document.createElementNS(SVGNS, "rect");
-    const svgElem = thing === level ? level.lvRectSvg : thing.elemForSelection;
-    const svgGrp = svgElem.parentElement;
+    if (thing != null) {
+        const liElem = (thing === level) ? ulObjList.firstElementChild : thing.liElem;
+        liElem.classList.add("selected");
+        liElem.scrollIntoView({behavior: "smooth", block: "nearest"});
 
-    if (thing === level) {
-        svgSelBorder.setAttributeNS(null, "x", level.lvRectSvg.getAttribute("x"));
-        svgSelBorder.setAttributeNS(null, "y", level.lvRectSvg.getAttribute("y"));
-        svgSelBorder.setAttributeNS(null, "width", level.lvRectSvg.getAttribute("width"));
-        svgSelBorder.setAttributeNS(null, "height", level.lvRectSvg.getAttribute("height"));
-        svgSelBorder.setAttributeNS(null, "fill", "none");
-    } else {
-        const bbox = svgElem.getBBox();
-        svgSelBorder.setAttributeNS(null, "x", bbox.x - 0.02);
-        svgSelBorder.setAttributeNS(null, "y", bbox.y - 0.02);
-        svgSelBorder.setAttributeNS(null, "width", bbox.width + 0.04);
-        svgSelBorder.setAttributeNS(null, "height", bbox.height + 0.04);
-        svgSelBorder.setAttributeNS(null, "stroke-dasharray", "0.05,0.05");
-        svgSelBorder.setAttributeNS(null, "fill", "#ffcd17");
-        svgSelBorder.setAttributeNS(null, "fill-opacity", "0.1")
+        const svgSelBorder = document.createElementNS(SVGNS, "rect");
+        const svgElem = thing === level ? level.lvRectSvg : thing.elemForSelection;
+        const svgGrp = svgElem.parentElement;
+
+        if (thing === level) {
+            svgSelBorder.setAttributeNS(null, "x", level.lvRectSvg.getAttribute("x"));
+            svgSelBorder.setAttributeNS(null, "y", level.lvRectSvg.getAttribute("y"));
+            svgSelBorder.setAttributeNS(null, "width", level.lvRectSvg.getAttribute("width"));
+            svgSelBorder.setAttributeNS(null, "height", level.lvRectSvg.getAttribute("height"));
+            svgSelBorder.setAttributeNS(null, "fill", "none");
+        } else {
+            const bbox = svgElem.getBBox();
+            svgSelBorder.setAttributeNS(null, "x", bbox.x - 0.02);
+            svgSelBorder.setAttributeNS(null, "y", bbox.y - 0.02);
+            svgSelBorder.setAttributeNS(null, "width", bbox.width + 0.04);
+            svgSelBorder.setAttributeNS(null, "height", bbox.height + 0.04);
+            svgSelBorder.setAttributeNS(null, "stroke-dasharray", "0.05,0.05");
+            svgSelBorder.setAttributeNS(null, "fill", "#ffcd17");
+            svgSelBorder.setAttributeNS(null, "fill-opacity", "0.1")
+        }
+
+        svgSelBorder.setAttributeNS(null, "stroke", "#ffcd17");
+        svgSelBorder.setAttributeNS(null, "stroke-width", "0.02");
+
+        svgGrp.appendChild(svgSelBorder);
+
+        level.svgSelectionBorder = svgSelBorder;
+
+        if (thing !== level) setUpSelectionDrag(svgSelBorder, level, thing);
     }
 
-    svgSelBorder.setAttributeNS(null, "stroke", "#ffcd17");
-    svgSelBorder.setAttributeNS(null, "stroke-width", "0.02");
-
-    svgGrp.appendChild(svgSelBorder);
-
-    level.svgSelectionBorder = svgSelBorder;
-
     updatePropsList(level, thing);
-
-    if (thing !== level) setUpSelectionDrag(svgSelBorder, level, thing);
 }
 
 function deleteThing (level, thing) {
@@ -264,7 +266,7 @@ function deleteThing (level, thing) {
         name: `Delete ${thing.name}`,
         redoCallback: () => {
             if (thing === level.selectedThing) {
-                selectThing(level, level);
+                selectThing(level, null);
             }
             thing.deleted = true;
             thing.elem.classList.add("deleted");
@@ -400,7 +402,9 @@ function updatePropsList(level, thing, force_refresh=false) {
     }
 
     let attrList;
-    if (thing === level) {
+    if (thing == null) {
+        return;
+    } else if (thing === level) {
         attrList = ["width", "height", "left", "bottom"];
     } else {
         attrList = thing.attrs;
@@ -533,6 +537,197 @@ function startAddNode (level, thing, doneCb, params) {
     document.addEventListener("keydown", onKeyDown, { capture: true });
 }
 
+function startTwoClickAdd (level, name) {
+    const svg = document.getElementById("level-scene").querySelector("svg");
+    const mainGrp = svg.querySelector("g");
+    const svgClientBBox = svg.getBoundingClientRect();
+
+    let pos1 = null;
+    let clientPos1 = null;
+    let thing = null;
+    let pos1Time = null;
+
+    const coordsFromEvent = ev => {
+        const x_px = ev.clientX;
+        const y_px = ev.clientY;
+        const x_coord = (x_px - svgClientBBox.left) / level.scaleUnit
+                        + svg.viewBox.baseVal.x;
+        const y_coord = (svgClientBBox.bottom - y_px) / level.scaleUnit
+                        + svg.viewBox.baseVal.y;
+        return { x: x_coord, y: y_coord };
+    }
+
+    const capturePosition1 = ev => {
+        if (ev.button != 0) return;
+
+        pos1Time = new Date();
+        pos1 = coordsFromEvent(ev);
+        clientPos1 = { x: ev.clientX, y: ev.clientY };
+        const Thing = thingTypes[name];
+        thing = new Thing();
+        thing.x = pos1.x;
+        thing.y = pos1.y;
+        switch (name) {
+            case "goal":
+                thing._mock = true; // TODO : fix goal rendering so this is not
+                                    //        needed
+            case "box":
+            case "cradle":
+                thing.width = 0;
+                thing.height = 0;
+                break;
+            case "circle":
+                thing.radius = 0;
+                break;
+            default:
+                return;
+        }
+        const thingSvg = thing.createSvg();
+        if (thingSvg != null) {
+            mainGrp.appendChild(thingSvg);
+        }
+        document.body.removeEventListener("mousedown", capturePosition1,
+                                          { capture: true });
+        document.body.addEventListener("mousemove", trackPosition2,
+                                       { capture: true });
+        document.body.addEventListener("mouseup", capturePosition2,
+                                       { capture: true });
+        document.body.addEventListener("mousedown", capturePosition2,
+                                       { capture: true });
+        document.addEventListener("keydown", handleKeyDown, { capture: true });
+
+        ev.stopPropagation();
+    };
+
+    const trackPosition2 = ev => {
+        const pos2 = coordsFromEvent(ev);
+        const dx = pos2.x - pos1.x;
+        const dy = pos2.y - pos1.y;
+        let width, height, x, y;
+        // Set the thing's size
+        switch (name) {
+        case "box":
+        case "goal":
+            width = Math.abs(dx);
+            height = Math.abs(dy);
+            x = (pos1.x + pos2.x) / 2;
+            y = (pos1.y + pos2.y) / 2;
+            thing.updateAttrs({ x, y, width, height });
+            break;
+        case "cradle":
+            width = Math.abs(dx);
+            height = Math.abs(dy);
+            x = (pos1.x + pos2.x) / 2;
+            y = Math.min(pos1.y, pos2.y);
+            thing.updateAttrs({ x, y, width, height });
+            break;
+        case "circle":
+            const radius = Math.sqrt(dx*dx + dy*dy);
+            thing.updateAttrs({ radius });
+            break;
+        }
+        // Set the cursor
+        if (dx > 0 && dy > 0) document.body.style.cursor = "ne-resize";
+        else if (dx > 0 && dy < 0) document.body.style.cursor = "se-resize";
+        else if (dx < 0 && dy < 0) document.body.style.cursor = "sw-resize";
+        else if (dx < 0 && dy > 0) document.body.style.cursor = "nw-resize";
+    };
+
+    const capturePosition2 = ev => {
+        // This event is fired on mouse release or press
+        // we need to figure out if this is supposed to be the end of
+        // the adding process, or not.
+        ev.stopPropagation();
+
+        const dx_px = ev.clientX - clientPos1.x;
+        const dy_px = ev.clientY - clientPos1.y;
+        const dr_px = Math.sqrt(dx_px*dx_px + dy_px*dy_px)
+        const dt = (new Date()) - pos1Time;
+
+        if (ev.type == "mouseup" && dt < 1000 && dr_px < 5) {
+            // little time has passed and the mouse hasn't moved a lot
+            // this is the end of the click.
+            return;
+        } else if (ev.type == "mousedown" && ev.button == 2) {
+            // Right click, let's call that a cancel.
+            cancelAddThing();
+            return;
+        } else if (ev.type == "mouseup" && ev.button != 0) {
+            // Released the wrong button. Ignore.
+            return;
+        }
+
+        // We're done, we can finalize the process of adding the thing
+        level.objects.push(thing);
+        if (name === "goal") {
+            delete thing._mock;
+            thing.refreshUI();
+        }
+
+        removeEventListeners();
+        document.body.style.cursor = null;
+
+        let undo, redo;
+        level.redoStack = [];
+        undo = {
+            name: `Add ${name}`,
+            undoCallback: () => {
+                if (thing === level.selectedThing) {
+                    selectThing(level, null);
+                }
+                thing.deleted = true;
+                thing.elem.classList.add("deleted");
+                thing.liElem.classList.add("deleted");
+                level.redoStack.push(redo);
+                updateToolbar(level);
+            }
+        };
+        redo = {
+            name: `Add ${name}`,
+            redoCallback: () => {
+                thing.deleted = false;
+                thing.elem.classList.remove("deleted");
+                thing.liElem.classList.remove("deleted");
+                level.undoStack.push(undo);
+                updateToolbar(level);
+            }
+        };
+        level.undoStack.push(undo);
+
+        setUpUI(level);
+
+        selectThing(level, thing);
+        thing.elem.addEventListener("click", ev => selectThing(level, thing));
+    };
+
+    const handleKeyDown = ev => {
+        if (ev.key === "Escape" || ev.key === "Delete" || ev.key === "Backspace") {
+            ev.stopPropagation();
+            cancelAddThing();
+        }
+    };
+
+    const removeEventListeners = () => {
+        document.body.removeEventListener("mousemove", trackPosition2,
+                                          { capture: true });
+        document.body.removeEventListener("mouseup", capturePosition2,
+                                          { capture: true });
+        document.body.removeEventListener("mousedown", capturePosition2,
+                                          { capture: true });
+        document.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+
+    const cancelAddThing = () => {
+        removeEventListeners();
+        thing.elem.remove();
+        document.body.style.cursor = null;
+    };
+
+    document.body.style.cursor = "crosshair";
+    document.body.addEventListener("mousedown", capturePosition1,
+                                       { capture: true });
+}
+
 function level2xml (level) {
     const xmlDoc = document.implementation.createDocument(null, "level", null);
     const lvElem = xmlDoc.documentElement;
@@ -628,50 +823,56 @@ const thingTypes = {
     "goal": class Goal extends PlayThing {
         constructor (xml) {
             super(xml);
-            this.x = getFloatAttr(xml, "x");
-            this.y = getFloatAttr(xml, "y");
-            this.width = getFloatAttr(xml, "width");
-            this.height = getFloatAttr(xml, "height");
+            if (xml instanceof Element) {
+                this.x = getFloatAttr(xml, "x");
+                this.y = getFloatAttr(xml, "y");
+                this.width = getFloatAttr(xml, "width");
+                this.height = getFloatAttr(xml, "height");
+            }
             this.attrs = ["x", "y", "width", "height"];
         }
         createSvg () {
             this.elem = document.createElementNS(SVGNS, "g");
+            this.boxElem = document.createElementNS(SVGNS, "rect");
+            this.boxElem.setAttributeNS(null, "x", "0");
+            this.boxElem.setAttributeNS(null, "y", "0");
+            this.elem.appendChild(this.boxElem);
+
             this.refreshUI();
             return this.elem;
         }
         refreshUI () {
-            while (this.elem.firstChild) this.elem.firstChild.remove();
+            this.boxElem.setAttributeNS(null, "width", this.width);
+            this.boxElem.setAttributeNS(null, "height", this.height);
+
+            while (this.elem.children.length > 1)
+                this.elem.children[1].remove();
 
             this.elem.setAttributeNS(null, "transform",
                 `translate(${this.x - this.width/2},${this.y - this.height/2})`);
             // this.elem shouldn't be a <g> (for now (?))
-            this.boxElem = document.createElementNS(SVGNS, "rect");
-            this.boxElem.setAttributeNS(null, "x", "0");
-            this.boxElem.setAttributeNS(null, "y", "0");
-            this.boxElem.setAttributeNS(null, "width", this.width);
-            this.boxElem.setAttributeNS(null, "height", this.height);
-            this.elem.appendChild(this.boxElem);
 
-
-            const sq_size = Math.min(this.width, this.height) / 2;
-            const drawBlackSq = (x, y) => {
-                const elem = document.createElementNS(SVGNS, "rect");
-                elem.setAttributeNS(null, "fill", "black");
-                elem.setAttributeNS(null, "stroke", "none");
-                elem.setAttributeNS(null, "x", x);
-                elem.setAttributeNS(null, "y", y);
-                elem.setAttributeNS(null, "width", sq_size);
-                elem.setAttributeNS(null, "height", sq_size);
-                this.elem.appendChild(elem);
-            };
-            // This bit is a bit buggy
-            for (let y = 0; y <= this.height - sq_size; y += 2 * sq_size) {
-                for (let x = sq_size; x <= this.width - sq_size; x += 2 * sq_size) {
-                    drawBlackSq(x, y);
-                }
-                if (y + 1.999 * sq_size <= this.height) {
-                    for (let x = 0; x <= this.width - sq_size; x += 2 * sq_size) {
-                        drawBlackSq(x, y + sq_size);
+            if (!this._mock) {
+                const sq_size = Math.min(this.width, this.height) / 2;
+                const drawBlackSq = (x, y) => {
+                    const elem = document.createElementNS(SVGNS, "rect");
+                    elem.setAttributeNS(null, "fill", "black");
+                    elem.setAttributeNS(null, "stroke", "none");
+                    elem.setAttributeNS(null, "x", x);
+                    elem.setAttributeNS(null, "y", y);
+                    elem.setAttributeNS(null, "width", sq_size);
+                    elem.setAttributeNS(null, "height", sq_size);
+                    this.elem.appendChild(elem);
+                };
+                // This bit is a bit buggy
+                for (let y = 0; y <= this.height - sq_size; y += 2 * sq_size) {
+                    for (let x = sq_size; x <= this.width - sq_size; x += 2 * sq_size) {
+                        drawBlackSq(x, y);
+                    }
+                    if (y + 1.999 * sq_size <= this.height) {
+                        for (let x = 0; x <= this.width - sq_size; x += 2 * sq_size) {
+                            drawBlackSq(x, y + sq_size);
+                        }
                     }
                 }
             }
@@ -704,10 +905,12 @@ const thingTypes = {
     "box": class Box extends PlayThing {
         constructor (xml) {
             super(xml);
-            this.x = getFloatAttr(xml, "x");
-            this.y = getFloatAttr(xml, "y");
-            this.width = getFloatAttr(xml, "width");
-            this.height = getFloatAttr(xml, "height");
+            if (xml instanceof Element) {
+                this.x = getFloatAttr(xml, "x");
+                this.y = getFloatAttr(xml, "y");
+                this.width = getFloatAttr(xml, "width");
+                this.height = getFloatAttr(xml, "height");
+            }
             this.attrs = ["x", "y", "width", "height"];
         }
         createSvg () {
@@ -733,10 +936,12 @@ const thingTypes = {
     "cradle": class Cradle extends PlayThing {
         constructor (xml) {
             super(xml);
-            this.x = getFloatAttr(xml, "x");
-            this.y = getFloatAttr(xml, "y");
-            this.width = getFloatAttr(xml, "width");
-            this.height = getFloatAttr(xml, "height");
+            if (xml instanceof Element) {
+                this.x = getFloatAttr(xml, "x");
+                this.y = getFloatAttr(xml, "y");
+                this.width = getFloatAttr(xml, "width");
+                this.height = getFloatAttr(xml, "height");
+            }
             this.attrs = ["x", "y", "width", "height"];
         }
         createSvg () {
@@ -764,9 +969,11 @@ const thingTypes = {
     "circle": class Circle extends PlayThing {
         constructor (xml) {
             super(xml);
-            this.x = getFloatAttr(xml, "x");
-            this.y = getFloatAttr(xml, "y");
-            this.radius = getFloatAttr(xml, "r");
+            if (xml instanceof Element) {
+                this.x = getFloatAttr(xml, "x");
+                this.y = getFloatAttr(xml, "y");
+                this.radius = getFloatAttr(xml, "r");
+            }
             this.attrs = ["x", "y", "radius"];
         }
         createSvg () {
@@ -792,9 +999,11 @@ const thingTypes = {
             super(xml);
             this.nodes = [];
             this.attrs = [];
-            for (const nodeXml of xml.children) {
-                this.pushNode(getFloatAttr(nodeXml, "x"),
-                              getFloatAttr(nodeXml, "y"));
+            if (xml instanceof Element) {
+                for (const nodeXml of xml.children) {
+                    this.pushNode(getFloatAttr(nodeXml, "x"),
+                                getFloatAttr(nodeXml, "y"));
+                }
             }
             this.canAddNode = true;
         }
@@ -907,6 +1116,18 @@ const actions = {
     deleteThing () {
         if (level.selectedThing.canBeDeleted) {
             deleteThing(level, level.selectedThing);
+        }
+    },
+    addThing (name) {
+        switch (name) {
+        case "box":
+        case "circle":
+        case "cradle":
+        case "goal":
+            startTwoClickAdd(level, name);
+            break;
+        default:
+            return;
         }
     }
 }

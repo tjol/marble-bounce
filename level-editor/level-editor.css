@@ -136,23 +136,30 @@ input {
     /* display: flex;
     flex-wrap: wrap;
     width: 128px; */
-    list-style: none;
     padding: 0;
     margin: 0;
     overflow: auto;
+}
+
+#add-list > button {
+    border: none;
+    background: inherit;
+    display: block;
+    margin: 0;
+    padding: 0;
 }
 
 /* #add-list > li {
     display: block;
 } */
 
-#add-list > li > svg {
+#add-list > button > svg {
     fill: none;
     stroke: #eee;
     stroke-width: 2px;
 }
 
-#add-list > li > svg .filled {
+#add-list > button > svg .filled {
     fill: #eee;
     stroke: none;
 }

@@ -12,32 +12,38 @@
         <div class="sidebar-window">
           <header>add</header>
           <menu id="add-list">
-            <li title="Add Box">
+            <button title="Add Box" id="btn-add-box"
+                onclick="actions.addThing('box')">
               <svg width="64" height="64">
                 <rect x="8" y="16" height="36" width="48"/>
               </svg>
-            </li>
-            <li title="Add Circle">
+            </button>
+            <button title="Add Circle" id="btn-add-circle"
+                onclick="actions.addThing('circle')">
               <svg width="64" height="64">
                 <circle cx="31.5" cy="31.5" r="22"/>
               </svg>
-            </li>
-            <li title="Add Cradle">
+            </button>
+            <button title="Add Cradle" id="btn-add-cradle"
+                onclick="actions.addThing('cradle')">
               <svg width="64" height="64">
                 <polyline points="8,16 8,48 52,48 52,16"/>
               </svg>
-            </li>
-            <li title="Add Polygon">
+            </button>
+            <button title="Add Polygon" id="btn-add-polygon"
+                onclick="actions.addThing('polygon')">
               <svg width="64" height="64">
                 <polygon points="8,32 24,16 48,8 56,40 48,56 16,48"/>
               </svg>
-            </li>
-            <li title="Add OpenPath">
+            </button>
+            <button title="Add OpenPath" id="btn-add-open-path"
+                onclick="actions.addThing('open-path')">
               <svg width="64" height="64">
                 <polyline points="16,8 8,48 32,16 24,36 42,24 52,52"/>
               </svg>
-            </li>
-            <li title="Add Goal">
+            </button>
+            <button title="Add Goal" id="btn-add-goal"
+                onclick="actions.addThing('goal')">
               <svg width="64" height="64">
                 <rect x="8" y="20" height="24" width="48"/>
                 <rect class="filled" x="8" y="20" height="12" width="12"/>
@@ -45,7 +51,7 @@
                 <rect class="filled" x="20" y="32" height="12" width="12"/>
                 <rect class="filled" x="44" y="32" height="12" width="12"/>
               </svg>
-            </li>
+            </button>
           </menu>
         </div>
       </div>
