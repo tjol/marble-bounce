@@ -230,11 +230,11 @@ function selectThing(level, thing) {
             svgSelBorder.setAttributeNS(null, "width", bbox.width + 0.04);
             svgSelBorder.setAttributeNS(null, "height", bbox.height + 0.04);
             svgSelBorder.setAttributeNS(null, "stroke-dasharray", "0.05,0.05");
-            svgSelBorder.setAttributeNS(null, "fill", "#ffcd17");
+            svgSelBorder.setAttributeNS(null, "fill", "var(--highlight-colour)");
             svgSelBorder.setAttributeNS(null, "fill-opacity", "0.1")
         }
 
-        svgSelBorder.setAttributeNS(null, "stroke", "#ffcd17");
+        svgSelBorder.setAttributeNS(null, "stroke", "var(--highlight-colour)");
         svgSelBorder.setAttributeNS(null, "stroke-width", "0.02");
 
         svgGrp.appendChild(svgSelBorder);
@@ -471,7 +471,7 @@ function startAddNode (level, thing, doneCb, params) {
     line.setAttributeNS(null, "y1", lastNode.y);
     line.setAttributeNS(null, "x2", lastNode.x);
     line.setAttributeNS(null, "y2", lastNode.y);
-    line.setAttributeNS(null, "stroke", "#ffcd17");
+    line.setAttributeNS(null, "stroke", "var(--highlight-colour)");
     mainGrp.appendChild(line);
 
     if (level.svgSelectionBorder != undefined) {
@@ -537,7 +537,7 @@ function startAddNode (level, thing, doneCb, params) {
     document.addEventListener("keydown", onKeyDown, { capture: true });
 }
 
-function startTwoClickAdd (level, name) {
+function startTwoClickAdd (level, name, btn) {
     const svg = document.getElementById("level-scene").querySelector("svg");
     const mainGrp = svg.querySelector("g");
     const svgClientBBox = svg.getBoundingClientRect();
@@ -594,6 +594,7 @@ function startTwoClickAdd (level, name) {
                                        { capture: true });
         document.body.addEventListener("mousedown", capturePosition2,
                                        { capture: true });
+        document.body.addEventListener("click", handleClick, { capture: true });
         document.addEventListener("keydown", handleKeyDown, { capture: true });
 
         ev.stopPropagation();
@@ -698,6 +699,7 @@ function startTwoClickAdd (level, name) {
 
         selectThing(level, thing);
         thing.elem.addEventListener("click", ev => selectThing(level, thing));
+        btn.classList.remove("activated");
     };
 
     const handleKeyDown = ev => {
@@ -707,6 +709,12 @@ function startTwoClickAdd (level, name) {
         }
     };
 
+    const handleClick = ev => {
+        // This is literally just to stop other event handlers from firing
+        // on clicks
+        ev.stopPropagation();
+    };
+
     const removeEventListeners = () => {
         document.body.removeEventListener("mousemove", trackPosition2,
                                           { capture: true });
@@ -714,6 +722,7 @@ function startTwoClickAdd (level, name) {
                                           { capture: true });
         document.body.removeEventListener("mousedown", capturePosition2,
                                           { capture: true });
+        document.body.removeEventListener("click", handleClick, { capture: true });
         document.removeEventListener("keydown", handleKeyDown, { capture: true });
     };
 
@@ -721,11 +730,13 @@ function startTwoClickAdd (level, name) {
         removeEventListeners();
         thing.elem.remove();
         document.body.style.cursor = null;
+        btn.classList.remove("activated");
     };
 
     document.body.style.cursor = "crosshair";
     document.body.addEventListener("mousedown", capturePosition1,
                                        { capture: true });
+    btn.classList.add("activated");
 }
 
 function level2xml (level) {
@@ -1141,18 +1152,6 @@ const actions = {
             deleteThing(level, level.selectedThing);
         }
     },
-    addThing (name) {
-        switch (name) {
-        case "box":
-        case "circle":
-        case "cradle":
-        case "goal":
-            startTwoClickAdd(level, name);
-            break;
-        default:
-            return;
-        }
-    }
 }
 
 
@@ -1168,4 +1167,11 @@ window.addEventListener("load", ev => {
         }
     };
     xhr.send(null);
+
+    for (const name of ["box", "circle", "cradle", "goal"]) {
+        document.getElementById(`btn-add-${name}`).addEventListener("click",
+            function (ev) {
+                startTwoClickAdd(level, name, this);
+            });
+    }
 });

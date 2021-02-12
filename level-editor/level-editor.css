@@ -1,7 +1,17 @@
+:root {
+    --highlight-colour: #ffcd17;
+    --text-colour: #eee;
+    --shadow-text-colour: #aaa;
+    --background1: #333;
+    --background2: #444;
+    --shadow-background2: #404040;
+    --background3: #555;
+}
+
 body {
     margin: 0;
-    background: #333;
-    color: #eee;
+    background: var(--background1);
+    color: var(--text-colour);
     height: 100vh;
     font-size: 14px;
     font-family: Cantarell;
@@ -12,12 +22,12 @@ input {
     margin: 0;
     background-color: inherit;
     color: inherit;
-    border: 1px solid #555;
+    border: 1px solid var(--background3);
 }
 
 #top-toolbar, #status-bar {
     width: 100%;
-    background-color: #444;
+    background-color: var(--background2);
     padding: 0;
     margin: 0;
     border: none;
@@ -51,7 +61,7 @@ input {
 
 .toolbar-button > svg, .list-button > svg {
     vertical-align: middle;
-    --icon-colour: #eee;
+    --icon-colour: var(--text-colour);
 }
 
 .toolbar-button > svg {
@@ -62,17 +72,17 @@ input {
 .toolbar-button:disabled > svg,
 .list-button:active > svg,
 .list-button:disabled > svg {
-    --icon-colour: #aaa;
+    --icon-colour: var(--shadow-text-colour);
 }
 
 .list-button.button-with-text {
-    color: #eee;
-    background-color: #555;
+    color: var(--text-colour);
+    background-color: var(--background3);
     border-radius: 3px;
     padding: 2px 12px;
 }
 .list-button.button-with-text:active {
-    color: #aaa;
+    color: var(--shadow-text-colour);
     border: none;
 }
 .list-button.button-with-text > svg {
@@ -100,15 +110,15 @@ input {
 
 #left-sidebar {
     height: 100%;
-    border-right: 1px solid #555;
-    background-color: #444;
+    border-right: 1px solid var(--background3);
+    background-color: var(--background2);
 }
 
 #right-sidebar {
     width: 350px;
     height: 100%;
-    border-left: 1px solid #555;
-    background-color: #444;
+    border-left: 1px solid var(--background3);
+    background-color: var(--background2);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -120,13 +130,13 @@ input {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    border-top: 1px solid #555;
-    border-bottom: 1px solid #555;
+    border-top: 1px solid var(--background3);
+    border-bottom: 1px solid var(--background3);
 }
 
 .sidebar-window > header {
     text-align: center;
-    background: #555;
+    background: var(--background3);
     padding: 2px;
     padding-bottom: 3px;
     min-height: 22px;
@@ -147,6 +157,15 @@ input {
     display: block;
     margin: 0;
     padding: 0;
+    --icon-colour: var(--text-colour);
+}
+
+#add-list > button:active {
+    --icon-colour: var(--shadow-text-colour);
+}
+
+#add-list > button.activated {
+    --icon-colour: var(--highlight-colour);
 }
 
 /* #add-list > li {
@@ -155,12 +174,12 @@ input {
 
 #add-list > button > svg {
     fill: none;
-    stroke: #eee;
+    stroke: var(--icon-colour);
     stroke-width: 2px;
 }
 
 #add-list > button > svg .filled {
-    fill: #eee;
+    fill: var(--icon-colour);
     stroke: none;
 }
 
@@ -172,7 +191,7 @@ input {
 }
 
 #object-list > li {
-    border-bottom: 1px dotted #555;
+    border-bottom: 1px dotted var(--background3);
     padding: 2px 1em;
     cursor: default;
     display: flex;
@@ -185,12 +204,12 @@ input {
 }
 
 #object-list > li:nth-child(even) {
-    background-color: #404040;
+    background-color: var(--shadow-background2);
 }
 
 #object-list > li.selected {
-    color: #ffcd17;
-    background-color: #333;
+    color: var(--highlight-colour);
+    background-color: var(--background1);
 }
 
 /* This is needed because HTML
@@ -208,12 +227,12 @@ on their own */
 }
 
 #properties-table tr {
-    border-bottom: 1px dotted #555;
+    border-bottom: 1px dotted var(--background3);
     padding: 2px 1em;
 }
 
 #properties-table tr:nth-child(even) {
-    background-color: #404040;
+    background-color: var(--shadow-background2);
 }
 
 #properties-table th {
