@@ -111,11 +111,11 @@ function drawLevel(level)
 
     const statusPara = document.getElementById("status-msg");
     sceneSvg.addEventListener("mousemove", ev => {
+        const svgBBox =sceneSvg.getBoundingClientRect();
         const x_px = ev.clientX;
         const y_px = ev.clientY;
-        const x_coord = x_px / unit + (level.left - leftOffset);
-        const y_coord = (sceneHeight - y_px) / unit +
-                        (level.bottom - bottomOffset);
+        const x_coord = (x_px - svgBBox.left) / unit + level.left - leftOffset;
+        const y_coord = (svgBBox.bottom - y_px) / unit + level.bottom - bottomOffset;
         statusPara.textContent = `(${x_coord.toFixed(2)}, ${y_coord.toFixed(2)})`;
     });
 
