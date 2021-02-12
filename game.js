@@ -114,6 +114,17 @@ window.addEventListener("load", function (event) {
                             body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
                         }
                     },
+                    "polygon": () => {
+                        const body = newWorld.createBody({ position: pl.Vec2(0, 0) });
+                        const nodePositions = Array.from(elem.children,
+                            pathNodeElem => pl.Vec2(floatAttr(pathNodeElem, "x"),
+                                                    floatAttr(pathNodeElem, "y")));
+                        let i;
+                        for (i = 1; i < nodePositions.length; ++i) {
+                            body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
+                        }
+                        body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[0]), wallFixDef);
+                    },
                     })[elem.tagName]();
                 }
 

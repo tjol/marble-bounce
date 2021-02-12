@@ -226,4 +226,17 @@
         </polyline>
     </xsl:template>
 
+    <xsl:template match="polygon">
+        <polygon>
+            <xsl:attribute name="points">
+                <xsl:for-each select="node">
+                    <xsl:if test="position() > 1"><xsl:text> </xsl:text></xsl:if>
+                    <xsl:value-of select="@x"/>
+                    <xsl:text>,</xsl:text>
+                    <xsl:value-of select="@y"/>
+                </xsl:for-each>
+            </xsl:attribute>
+        </polygon>
+    </xsl:template>
+
 </xsl:stylesheet>

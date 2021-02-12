@@ -772,6 +772,64 @@ class PlayThing {
     }
 }
 
+class GenericPoly extends PlayThing {
+    constructor (xml) {
+        super(xml);
+        this.nodes = [];
+        this.attrs = [];
+        if (xml instanceof Element) {
+            for (const nodeXml of xml.children) {
+                this.pushNode(getFloatAttr(nodeXml, "x"),
+                            getFloatAttr(nodeXml, "y"));
+            }
+        }
+    }
+    pushNode(x, y) {
+        const i = this.nodes.length;
+        const n = { x, y };
+        this.nodes.push(n);
+        this.attrs.push(`x ${i+1}`, `y ${i+1}`)
+        Object.defineProperties(this, {
+            [`x ${i+1}`]: {
+                get: () => n.x,
+                set: (val) => n.x = val,
+                configurable: true,
+                enumerable: false
+            },
+            [`y ${i+1}`]: {
+                get: () => n.y,
+                set: (val) => n.y = val,
+                configurable: true,
+                enumerable: false
+            },
+        });
+    }
+    popNode() {
+        const i = this.nodes.length - 1;
+        this.nodes.pop();
+        this.attrs.pop();
+        this.attrs.pop();
+        delete this[`x ${i+1}`];
+        delete this[`y ${i+1}`];
+    }
+    refreshUI () {
+        this.elem.setAttributeNS(null, "points",
+            this.nodes.map(n => `${n.x},${n.y}`).join(' '));
+    }
+    get position () {
+        return {...this.nodes[0]};
+    }
+    moveTo (pos0) {
+        const deltaX = pos0.x - this.nodes[0].x;
+        const deltaY = pos0.y - this.nodes[0].y;
+        for (const node of this.nodes) {
+            node.x += deltaX;
+            node.y += deltaY;
+        }
+        this.refreshUI();
+    }
+}
+
 const thingTypes = {
     "start": class StartBall extends PlayThing {
         constructor (xml) {
@@ -994,67 +1052,15 @@ const thingTypes = {
             return elem;
         }
     },
-    "open-path": class OpenPath extends PlayThing {
+    "open-path": class OpenPath extends GenericPoly {
         constructor (xml) {
             super(xml);
-            this.nodes = [];
-            this.attrs = [];
-            if (xml instanceof Element) {
-                for (const nodeXml of xml.children) {
-                    this.pushNode(getFloatAttr(nodeXml, "x"),
-                                getFloatAttr(nodeXml, "y"));
-                }
-            }
             this.canAddNode = true;
-        }
-        pushNode(x, y) {
-            const i = this.nodes.length;
-            const n = { x, y };
-            this.nodes.push(n);
-            this.attrs.push(`x ${i+1}`, `y ${i+1}`)
-            Object.defineProperties(this, {
-                [`x ${i+1}`]: {
-                    get: () => n.x,
-                    set: (val) => n.x = val,
-                    configurable: true,
-                    enumerable: false
-                },
-                [`y ${i+1}`]: {
-                    get: () => n.y,
-                    set: (val) => n.y = val,
-                    configurable: true,
-                    enumerable: false
-                },
-            });
-        }
-        popNode() {
-            const i = this.nodes.length - 1;
-            this.nodes.pop();
-            this.attrs.pop();
-            this.attrs.pop();
-            delete this[`x ${i+1}`];
-            delete this[`y ${i+1}`];
         }
         createSvg () {
             this.elem = document.createElementNS(SVGNS, "polyline");
             this.refreshUI();
             return this.elem;
-        }
-        refreshUI () {
-            this.elem.setAttributeNS(null, "points",
-                this.nodes.map(n => `${n.x},${n.y}`).join(' '));
-        }
-        get position () {
-            return {...this.nodes[0]};
-        }
-        moveTo (pos0) {
-            const deltaX = pos0.x - this.nodes[0].x;
-            const deltaY = pos0.y - this.nodes[0].y;
-            for (const node of this.nodes) {
-                node.x += deltaX;
-                node.y += deltaY;
-            }
-            this.refreshUI();
         }
         toXml (xmlDoc) {
             const pathElem = xmlDoc.createElement("open-path");
@@ -1066,7 +1072,24 @@ const thingTypes = {
             }
             return pathElem;
         }
-    }
+    },
+    "polygon": class Polygon extends GenericPoly {
+        createSvg () {
+            this.elem = document.createElementNS(SVGNS, "polygon");
+            this.refreshUI();
+            return this.elem;
+        }
+        toXml (xmlDoc) {
+            const pathElem = xmlDoc.createElement("polygon");
+            for (const node of this.nodes) {
+                const nodeElem = xmlDoc.createElement("node");
+                nodeElem.setAttribute("x", node.x);
+                nodeElem.setAttribute("y", node.y);
+                pathElem.appendChild(nodeElem)
+            }
+            return pathElem;
+        }
+    },
 }
 
 function onKeyDown(ev) {
