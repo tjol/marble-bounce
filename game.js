@@ -136,7 +136,7 @@ window.addEventListener("load", function (event) {
     }
 
 
-    const levels = ["level1", "level2"];
+    const levels = ["level1", "level2", "level3"];
     let levelIdx = 0;
 
     let world, worldSize, ball;
