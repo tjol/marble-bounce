@@ -186,6 +186,9 @@ function setUpUI(level) {
                          : null;
         thing.name = objName;
         thing.liElem = newListItem(objName, onClick, onDelete);
+        if (thing.deleted) {
+            thing.liElem.classList.add("deleted");
+        }
     }
 
     updateToolbar(level);
