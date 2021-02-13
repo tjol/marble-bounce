@@ -420,7 +420,10 @@ function updatePropsList(level, thing, force_refresh=false) {
         const th = row.querySelector("th");
         const input = row.querySelector("input");
         th.textContent = attrName;
-        const origValue = thing[attrName];
+        let origValue = thing[attrName];
+        if ((typeof origValue) === "number") {
+            origValue = parseFloat(origValue.toFixed(3));
+        }
         input.value = origValue;
 
         input.addEventListener("input", ev => {
