@@ -317,7 +317,7 @@ on their own */
 #first-page {
     display: flex;
     justify-content: center;
-    align-content: center;
+    align-items: center;
     flex-direction: column;
     height: 100%;
 }
@@ -328,7 +328,10 @@ on their own */
     color: var(--text-colour);
     --icon-colour: var(--text-colour);
     font-size: 2.5em;
-    margin: 2em;
+    margin: 1em;
+    padding: 1em;
+    width: 15em;
+    text-align: left;
 }
 
 .first-page-action > svg {
