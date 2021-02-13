@@ -51,6 +51,16 @@
       </div>
       <div id="middle">
         <menu id="top-toolbar">
+          <button id="btn-new" class="toolbar-button"
+                  onclick="actions.new()"
+                  title="New Level">
+            <svg width="16" height="16"><use href="./new.svg#icon"/></svg>
+          </button>
+          <button id="btn-open" class="toolbar-button"
+                  onclick="actions.open()"
+                  title="Open">
+            <svg width="16" height="16"><use href="./open.svg#icon"/></svg>
+          </button>
           <button id="btn-download" class="toolbar-button"
                   onclick="actions.download()"
                   title="Download">
@@ -71,7 +81,27 @@
             </svg>
           </button>
         </menu>
-        <div id="level-scene"></div>
+        <main id="level-scene">
+
+          <div id="first-page">
+
+            <button class="first-page-action" onclick="actions.new()">
+              <svg width="96" height="96">
+                <g transform="scale(6)"><use href="./new.svg#icon"/></g>
+              </svg>
+              Create New Level
+            </button>
+
+            <button class="first-page-action" onclick="actions.open()">
+              <svg width="96" height="96">
+                <g transform="scale(6)"><use href="./open.svg#icon"/></g>
+              </svg>
+              Open Existing Level
+            </button>
+
+          </div>
+
+        </main>
         <div id="status-bar"><p id="status-msg"></p></div>
       </div>
       <div id="right-sidebar">
@@ -106,6 +136,24 @@
           </template>
         </div>
       </div>
+    </div>
+    <div id="msgbox" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <p></p>
+        <div class="modal-window-buttons">
+        </div>
+      </dialog>
+    </div>
+    <div id="file-open-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div>
+          <p>Please select a level XML file</p>
+          <p><input type="file" accept=".xml,application/xml,text/xml"></p>
+        </div>
+        <div class="modal-window-buttons">
+          <button>Cancel</button>
+        </div>
+      </dialog>
     </div>
   </body>
 </html>

@@ -8,7 +8,40 @@ function getFloatAttr (elem, attrName) {
 
 let level = null;
 
-function loadLevelFromDocument(dom_doc) {
+function createNewLevel () {
+    const ball = new (thingTypes.start)();
+    ball.x = 1.75;
+    ball.y = 3.5;
+    const cradle = new (thingTypes.cradle)();
+    cradle.x = 1.75;
+    cradle.y = 3;
+    cradle.width = 0.6;
+    cradle.height = 0.5;
+    const goal = new (thingTypes.goal)();
+    goal.x = 1.75;
+    goal.y = 0.5;
+    goal.width = 1.5;
+    goal.height = 0.25;
+
+    level = {
+        width: 3.5,
+        height: 4.8,
+        left: 0,
+        bottom: 0,
+
+        objects: [ ball, cradle, goal ],
+        undoStack: [],
+        redoStack: []
+    };
+
+    drawLevel(level);
+    setUpUI(level);
+    selectThing(level, null);
+
+    return level;
+}
+
+function loadLevelFromDocument (dom_doc) {
     const lvElem = dom_doc.documentElement;
     if (lvElem.tagName !== "level") {
         throw new Error("Not a valid level");
@@ -24,9 +57,13 @@ function loadLevelFromDocument(dom_doc) {
         redoStack: []
     };
 
-    for (const elem of lvElem.children) {
-        const Thing = thingTypes[elem.tagName];
-        newLevel.objects.push(new Thing(elem));
+    try {
+        for (const elem of lvElem.children) {
+            const Thing = thingTypes[elem.tagName];
+            newLevel.objects.push(new Thing(elem));
+        }
+    } catch {
+        return null;
     }
 
     return newLevel;
@@ -851,6 +888,45 @@ function startAddPath (level, name, btn) {
     btn.classList.add("activated");
 }
 
+function doOpenLevel () {
+    // Set up the dialog
+    const dialog = document.getElementById("file-open-window");
+    dialog.classList.remove("hidden-modal");
+
+    const cancelBtn = dialog.querySelector("button");
+    const fileInput = dialog.querySelector("input");
+    fileInput.value = "";
+
+    const closeDialog = () => {
+        cancelBtn.onclick = null;
+        fileInput.onchange = null;
+        dialog.classList.add("hidden-modal");
+    }
+
+    cancelBtn.onclick = closeDialog;
+
+
+    fileInput.onchange = async ev => {
+        if (fileInput.files.length > 0) {
+            closeDialog();
+            const f = fileInput.files[0];
+            const xmltext = await f.text();
+
+            try {
+                const parser = new DOMParser();
+                const xmldoc = parser.parseFromString(xmltext, "application/xml");
+                level = loadLevelFromDocument(xmldoc);
+                drawLevel(level);
+                setUpUI(level);
+                selectThing(level, null);
+            } catch {
+                msgBox("Error loading level.", { "OK": () => null });
+            }
+        }
+    };
+
+}
+
 function coordsFromEvent (ev, svg) {
     if (svg == null)
         svg = document.getElementById("level-scene").querySelector("svg");
@@ -972,8 +1048,10 @@ const thingTypes = {
     "start": class StartBall extends PlayThing {
         constructor (xml) {
             super(xml);
-            this.x = getFloatAttr(xml, "x");
-            this.y = getFloatAttr(xml, "y");
+            if (xml instanceof Element) {
+                this.x = getFloatAttr(xml, "x");
+                this.y = getFloatAttr(xml, "y");
+            }
             this.attrs = ["x", "y"];
         }
         createSvg () {
@@ -1230,7 +1308,7 @@ const thingTypes = {
     },
 }
 
-function onKeyDown(ev) {
+function onKeyDown (ev) {
     if (ev.ctrlKey && !ev.altKey && !ev.shiftKey && // Ctrl+Z
             (ev.key == "z" || ev.key == "Z")) {
         // Capture
@@ -1246,6 +1324,27 @@ function onKeyDown(ev) {
     } else if (ev.key == "Delete") {
         ev.stopPropagation();
         actions.deleteThing();
+    }
+}
+
+function msgBox (message, actions) {
+    // Set up the msgbox
+    const msgbox = document.getElementById("msgbox");
+    msgbox.querySelector("p").innerHTML = message;
+    msgbox.classList.remove("hidden-modal");
+    const buttonbar = msgbox.querySelector(".modal-window-buttons");
+    while (buttonbar.firstChild) buttonbar.firstChild.remove();
+
+    const close = (callback) => {
+        msgbox.classList.add("hidden-modal");
+        callback();
+    };
+
+    for (const action in actions) {
+        const btn = document.createElement("button");
+        btn.textContent = action;
+        btn.onclick = ev => close(actions[action]);
+        buttonbar.appendChild(btn);
     }
 }
 
@@ -1273,27 +1372,47 @@ const actions = {
         linkElem.click();
 
         document.body.removeChild(linkElem);
+
+        if (level.undoStack.length == 0) {
+            level.saved = null;
+        } else {
+            level.saved = level.undoStack[level.undoStack.length - 1];
+        }
     },
     deleteThing () {
         if (level.selectedThing.canBeDeleted) {
             deleteThing(level, level.selectedThing);
         }
     },
+    new () {
+        if (level == null
+                || (level.undoStack.length == 0 && level.saved == null)
+                || (level.saved === level.undoStack[level.undoStack.length-1])) {
+            createNewLevel();
+        } else {
+            msgBox("You have not saved your work.<br>"
+                   + "Are you sure you want to create a new level?",
+                   {"Cancel": () => null,
+                    "New Level": createNewLevel});
+        }
+    },
+    open () {
+        if (level == null
+                || (level.undoStack.length == 0 && level.saved == null)
+                || (level.saved === level.undoStack[level.undoStack.length-1])) {
+            doOpenLevel();
+        } else {
+            msgBox("You have not saved your work.<br>"
+                   + "Are you sure?",
+                   {"Cancel": () => null,
+                    "Open Level": doOpenLevel});
+        }
+    }
 }
 
 
 window.addEventListener("load", ev => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", `../level2.xml`, true);
-    xhr.onload = xhrEvt => {
-        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            level = loadLevelFromDocument(xhr.responseXML);
-            document.addEventListener("keydown", onKeyDown);
-            drawLevel(level);
-            setUpUI(level);
-        }
-    };
-    xhr.send(null);
+    document.addEventListener("keydown", onKeyDown);
 
     for (const name of ["box", "circle", "cradle", "goal"]) {
         document.getElementById(`btn-add-${name}`).addEventListener("click",
