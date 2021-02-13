@@ -6,6 +6,10 @@ function getFloatAttr (elem, attrName) {
     return parseFloat(elem.getAttribute(attrName));
 }
 
+function to3Decimals (n) {
+    return parseFloat(n.toFixed(3))
+}
+
 let level = null;
 
 function createNewLevel () {
@@ -168,6 +172,8 @@ function drawLevel(level)
         sceneSvg.setAttributeNS(null, "width", sceneWidth);
         sceneSvg.setAttributeNS(null, "height", sceneHeight);
         sceneSvg.setAttributeNS(null, "viewBox",viewBox);
+        mainGrp.setAttributeNS(null, "transform",
+            `translate(0,${level.height + 2 * level.bottom}) scale(1,-1)`);
         lvRect.setAttributeNS(null, "width", level.width);
         lvRect.setAttributeNS(null, "height", level.height);
         lvRect.setAttributeNS(null, "x", level.left);
@@ -459,7 +465,7 @@ function updatePropsList(level, thing, force_refresh=false) {
         th.textContent = attrName;
         let origValue = thing[attrName];
         if ((typeof origValue) === "number") {
-            origValue = parseFloat(origValue.toFixed(3));
+            origValue = to3Decimals(origValue);
         }
         input.value = origValue;
 
@@ -1086,8 +1092,8 @@ const thingTypes = {
         }
         toXml (xmlDoc) {
             const elem = xmlDoc.createElement("start");
-            elem.setAttribute("x", this.x);
-            elem.setAttribute("y", this.y);
+            elem.setAttribute("x", to3Decimals(this.x));
+            elem.setAttribute("y", to3Decimals(this.y));
             return elem;
         }
         get canBeDeleted () {
@@ -1169,10 +1175,10 @@ const thingTypes = {
         }
         toXml (xmlDoc) {
             const elem = xmlDoc.createElement("goal");
-            elem.setAttribute("x", this.x);
-            elem.setAttribute("y", this.y);
-            elem.setAttribute("width", this.width);
-            elem.setAttribute("height", this.height);
+            elem.setAttribute("x", to3Decimals(this.x));
+            elem.setAttribute("y", to3Decimals(this.y));
+            elem.setAttribute("width", to3Decimals(this.width));
+            elem.setAttribute("height", to3Decimals(this.height));
             return elem;
         }
     },
@@ -1200,10 +1206,10 @@ const thingTypes = {
         }
         toXml (xmlDoc) {
             const elem = xmlDoc.createElement("box");
-            elem.setAttribute("x", this.x);
-            elem.setAttribute("y", this.y);
-            elem.setAttribute("width", this.width);
-            elem.setAttribute("height", this.height);
+            elem.setAttribute("x", to3Decimals(this.x));
+            elem.setAttribute("y", to3Decimals(this.y));
+            elem.setAttribute("width", to3Decimals(this.width));
+            elem.setAttribute("height", to3Decimals(this.height));
             return elem;
         }
     },
@@ -1233,10 +1239,10 @@ const thingTypes = {
         }
         toXml (xmlDoc) {
             const elem = xmlDoc.createElement("cradle");
-            elem.setAttribute("x", this.x);
-            elem.setAttribute("y", this.y);
-            elem.setAttribute("width", this.width);
-            elem.setAttribute("height", this.height);
+            elem.setAttribute("x", to3Decimals(this.x));
+            elem.setAttribute("y", to3Decimals(this.y));
+            elem.setAttribute("width", to3Decimals(this.width));
+            elem.setAttribute("height", to3Decimals(this.height));
             return elem;
         }
     },
@@ -1262,9 +1268,9 @@ const thingTypes = {
         }
         toXml (xmlDoc) {
             const elem = xmlDoc.createElement("circle");
-            elem.setAttribute("x", this.x);
-            elem.setAttribute("y", this.y);
-            elem.setAttribute("r", this.radius);
+            elem.setAttribute("x", to3Decimals(this.x));
+            elem.setAttribute("y", to3Decimals(this.y));
+            elem.setAttribute("r", to3Decimals(this.radius));
             return elem;
         }
     },
@@ -1282,8 +1288,8 @@ const thingTypes = {
             const pathElem = xmlDoc.createElement("open-path");
             for (const node of this.nodes) {
                 const nodeElem = xmlDoc.createElement("node");
-                nodeElem.setAttribute("x", node.x);
-                nodeElem.setAttribute("y", node.y);
+                nodeElem.setAttribute("x", to3Decimals(node.x));
+                nodeElem.setAttribute("y", to3Decimals(node.y));
                 pathElem.appendChild(nodeElem)
             }
             return pathElem;
@@ -1299,8 +1305,8 @@ const thingTypes = {
             const pathElem = xmlDoc.createElement("polygon");
             for (const node of this.nodes) {
                 const nodeElem = xmlDoc.createElement("node");
-                nodeElem.setAttribute("x", node.x);
-                nodeElem.setAttribute("y", node.y);
+                nodeElem.setAttribute("x", to3Decimals(node.x));
+                nodeElem.setAttribute("y", to3Decimals(node.y));
                 pathElem.appendChild(nodeElem)
             }
             return pathElem;
