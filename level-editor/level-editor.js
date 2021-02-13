@@ -479,18 +479,13 @@ function startAddNode (level, thing, doneCb, params) {
     }
 
     const onMouseMove = ev => {
-        const x_px = ev.clientX;
-        const y_px = ev.clientY;
-        const x_coord = (x_px - svgClientBBox.left) / level.scaleUnit
-                        + svg.viewBox.baseVal.x;
-        const y_coord = (svgClientBBox.bottom - y_px) / level.scaleUnit
-                        + svg.viewBox.baseVal.y;
+        const { x, y } = coordsFromEvent (ev, svg);
 
-        line.setAttributeNS(null, "x2", x_coord);
-        line.setAttributeNS(null, "y2", y_coord);
-
+        line.setAttributeNS(null, "x2", x);
+        line.setAttributeNS(null, "y2", y);
     };
     const onClick = ev => {
+        if (ev.button != 0) return;
         ev.stopPropagation();
 
         const newNode = { x: line.x2.baseVal.value,
@@ -519,49 +514,43 @@ function startAddNode (level, thing, doneCb, params) {
 
         doneCb(true);
     };
+    const cancel = () => {
+        line.remove();
+        document.removeEventListener("keydown", onKeyDown, { capture: true });
+        document.body.removeEventListener("mousemove", onMouseMove, { capture: true });
+        document.body.removeEventListener("click", onClick, { capture: true });
+        document.body.style.cursor = null;
+        doneCb(false);
+    }
     const onKeyDown = ev => {
         if (ev.key == "Escape") {
             ev.stopPropagation();
             // Stop this madness
-            line.remove();
-            document.removeEventListener("keydown", onKeyDown, { capture: true });
-            document.body.removeEventListener("mousemove", onMouseMove, { capture: true });
-            document.body.removeEventListener("click", onClick, { capture: true });
-            document.body.style.cursor = null;
-            doneCb(false);
+            cancel();
         }
     }
 
     document.body.addEventListener("mousemove", onMouseMove, { capture: true });
     document.body.addEventListener("click", onClick, { capture: true });
     document.addEventListener("keydown", onKeyDown, { capture: true });
+
+    return { cancel };
 }
 
 function startTwoClickAdd (level, name, btn) {
     const svg = document.getElementById("level-scene").querySelector("svg");
     const mainGrp = svg.querySelector("g");
-    const svgClientBBox = svg.getBoundingClientRect();
 
     let pos1 = null;
     let clientPos1 = null;
     let thing = null;
     let pos1Time = null;
 
-    const coordsFromEvent = ev => {
-        const x_px = ev.clientX;
-        const y_px = ev.clientY;
-        const x_coord = (x_px - svgClientBBox.left) / level.scaleUnit
-                        + svg.viewBox.baseVal.x;
-        const y_coord = (svgClientBBox.bottom - y_px) / level.scaleUnit
-                        + svg.viewBox.baseVal.y;
-        return { x: x_coord, y: y_coord };
-    }
-
     const capturePosition1 = ev => {
         if (ev.button != 0) return;
 
         pos1Time = new Date();
-        pos1 = coordsFromEvent(ev);
+        pos1 = coordsFromEvent(ev, svg);
         clientPos1 = { x: ev.clientX, y: ev.clientY };
         const Thing = thingTypes[name];
         thing = new Thing();
@@ -601,7 +590,7 @@ function startTwoClickAdd (level, name, btn) {
     };
 
     const trackPosition2 = ev => {
-        const pos2 = coordsFromEvent(ev);
+        const pos2 = coordsFromEvent(ev, svg);
         const dx = pos2.x - pos1.x;
         const dy = pos2.y - pos1.y;
         let width, height, x, y;
@@ -739,6 +728,138 @@ function startTwoClickAdd (level, name, btn) {
     btn.classList.add("activated");
 }
 
+function startAddPath (level, name, btn) {
+    const svg = document.getElementById("level-scene").querySelector("svg");
+    const mainGrp = svg.querySelector("g");
+
+    let pos1 = null;
+    let clientPos1 = null;
+    let thing = null;
+    let cancelAddNode = null;
+    let done = false;
+
+    const capturePosition1 = ev => {
+        if (ev.button != 0) return;
+
+        pos1 = coordsFromEvent(ev, svg);
+        clientPos1 = { x: ev.clientX, y: ev.clientY };
+        const Thing = thingTypes[name];
+        thing = new Thing();
+        thing.pushNode(pos1.x, pos1.y);
+        const thingSvg = thing.createSvg();
+        if (thingSvg != null) {
+            mainGrp.appendChild(thingSvg);
+        }
+        document.body.removeEventListener("click", capturePosition1,
+                                          { capture: true });
+        document.body.addEventListener("contextmenu", handleRightClick,
+                                       { capture: true });
+        document.addEventListener("keydown", handleKeyDown, { capture: true });
+
+        ev.stopPropagation();
+
+        cancelAddNode = startAddNode(level, thing, onNodeAdded, {}).cancel;
+    };
+
+    const handleKeyDown = ev => {
+        if (ev.key === "Enter") {
+            ev.stopPropagation();
+            done = true;
+            cancelAddNode();
+            finishAddThing();
+        }
+    };
+
+    const handleRightClick = ev => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        done = true;
+        cancelAddNode();
+        finishAddThing();
+    }
+
+    const onNodeAdded = (nodeAdded) => {
+        if (!nodeAdded) {
+            if (!done) cancelAddThing();
+        } else {
+            cancelAddNode = startAddNode(level, thing, onNodeAdded, {}).cancel;
+        }
+    };
+
+    const removeEventListeners = () => {
+        document.removeEventListener("keydown", handleKeyDown, { capture: true });
+        document.body.removeEventListener("contextmenu", handleRightClick,
+                                          { capture: true });
+    };
+
+    const finishAddThing = () => {
+        level.objects.push(thing);
+
+        removeEventListeners();
+        document.body.style.cursor = null;
+
+        let undo, redo;
+        level.redoStack = [];
+        undo = {
+            name: `Add ${name}`,
+            undoCallback: () => {
+                if (thing === level.selectedThing) {
+                    selectThing(level, null);
+                }
+                thing.deleted = true;
+                thing.elem.classList.add("deleted");
+                thing.liElem.classList.add("deleted");
+                level.redoStack.push(redo);
+                updateToolbar(level);
+            }
+        };
+        redo = {
+            name: `Add ${name}`,
+            redoCallback: () => {
+                thing.deleted = false;
+                thing.elem.classList.remove("deleted");
+                thing.liElem.classList.remove("deleted");
+                level.undoStack.push(undo);
+                updateToolbar(level);
+            }
+        };
+        level.undoStack.push(undo);
+
+        setUpUI(level);
+
+        selectThing(level, thing);
+        thing.elem.addEventListener("click", ev => selectThing(level, thing));
+        btn.classList.remove("activated");
+    };
+
+    const cancelAddThing = () => {
+        removeEventListeners();
+        thing.elem.remove();
+        document.body.style.cursor = null;
+        btn.classList.remove("activated");
+    };
+
+    document.body.style.cursor = "crosshair";
+    document.body.addEventListener("click", capturePosition1,
+                                   { capture: true });
+    btn.classList.add("activated");
+}
+
+function coordsFromEvent (ev, svg) {
+    if (svg == null)
+        svg = document.getElementById("level-scene").querySelector("svg");
+
+    const svgClientBBox = svg.getBoundingClientRect();
+
+    const x_px = ev.clientX;
+    const y_px = ev.clientY;
+    const x_coord = (x_px - svgClientBBox.left) / level.scaleUnit
+                    + svg.viewBox.baseVal.x;
+    const y_coord = (svgClientBBox.bottom - y_px) / level.scaleUnit
+                    + svg.viewBox.baseVal.y;
+    return { x: x_coord, y: y_coord };
+}
+
 function level2xml (level) {
     const xmlDoc = document.implementation.createDocument(null, "level", null);
     const lvElem = xmlDoc.documentElement;
@@ -791,7 +912,7 @@ class GenericPoly extends PlayThing {
         if (xml instanceof Element) {
             for (const nodeXml of xml.children) {
                 this.pushNode(getFloatAttr(nodeXml, "x"),
-                            getFloatAttr(nodeXml, "y"));
+                              getFloatAttr(nodeXml, "y"));
             }
         }
     }
@@ -1172,6 +1293,12 @@ window.addEventListener("load", ev => {
         document.getElementById(`btn-add-${name}`).addEventListener("click",
             function (ev) {
                 startTwoClickAdd(level, name, this);
+            });
+    }
+    for (const name of ["open-path", "polygon"]) {
+        document.getElementById(`btn-add-${name}`).addEventListener("click",
+            function (ev) {
+                startAddPath(level, name, this);
             });
     }
 });
