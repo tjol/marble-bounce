@@ -1,3 +1,9 @@
+/*
+Copyright (c) 2020-2021 Thomas Jollans
+
+https://github.com/tjol/marble-bounce
+*/
+
 'use strict';
 
 const SVGNS = "http://www.w3.org/2000/svg";
