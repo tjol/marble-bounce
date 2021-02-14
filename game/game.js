@@ -239,8 +239,8 @@ window.addEventListener("load", function (event) {
     const cv = document.getElementById("gcnv");
     const ctx = cv.getContext('2d');
 
-    cv.height = document.body.clientHeight;
-    cv.width = document.body.clientWidth;
+    cv.height = window.innerHeight;
+    cv.width = window.innerWidth;
 
     // window.addEventListener("resize", ev => {
     //     cv.height = window.innerHeight;
