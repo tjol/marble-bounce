@@ -1,24 +1,50 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <script src="//cdn.jsdelivr.net/npm/planck-js@0.3.23/dist/planck.min.js"></script>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Marbles Game - Proof of Concept</title>
-        <style>
-            * {
-                padding: 0;
-                margin:0;
-                border: none;
-            }
-
-            body {
-                overflow: hidden;
-            }
-        </style>
-    </head>
-    <body>
-        <canvas id="gcnv"></canvas>
-        <script src="./game.js"></script>
-    </body>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Marble Bounce</title>
+    <link rel="stylesheet" href="landing-page.css"/>
+    <script src="landing-page.js"></script>
+  </head>
+  <body>
+    <h1>Marble Bounce!</h1>
+    <section id="play-game" class="hidden">
+      <p>It looks like you are on a mobile device!</p>
+      <div class="button-wrapper">
+        <a class="button" href="game">Play Marble Bounce</a>
+      </div>
+    </section>
+    <section id="no-motion" class="hidden">
+      <svg width="64" height="64">
+        <g transform="scale(4)"><use href="icons/error.svg#icon"/></g>
+      </svg>
+      <p>
+        It looks like you’re on a mobile device, but I can’t access your
+        accelerometers!
+      </p>
+      <p>
+        Please check your browser settings, or try a different browser
+        or a different device.
+      </p>
+    </section>
+    <section id="not-mobile" class="hidden">
+      <p>
+        Marble Bounce is a mobile game that you control by moving your phone.
+      </p>
+      <p>
+        The game won’t work on this device.
+        <strong>Try it on your phone!</strong>
+      </p>
+    </section>
+    <section id="open-editor" class="hidden">
+      <p>
+        It looks like you're on a computer with a mouse! That won’t help you
+        play the game, but you can use it to create new levels!
+      </p>
+      <div class="button-wrapper">
+        <a class="button" href="level-editor">Open Level Editor</a>
+      </div>
+    </section>
+  </body>
 </html>

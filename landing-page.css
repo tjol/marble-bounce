@@ -1,0 +1,55 @@
+:root {
+    --text-colour: #333;
+    --icon-colour: #333;
+}
+
+body {
+    color: var(--text-colour);
+    font-family: Cantarell;
+    font-size: 1.3em;
+    background-color: #fafafa;
+    padding: 2em;
+    margin: auto;
+    max-width: 28em;
+    min-height: 100vh;
+}
+
+@media only screen and (max-width: 400px) {
+    body {
+        font-size: 1.1em;
+    }
+}
+
+h1 {
+    text-align: center;
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none;
+}
+
+a.button {
+    display: inline-block;
+    padding: 1em;
+    color: #fafafa;
+    background-color: #333;
+    border: none;
+    border-radius: 0.5em;
+    text-decoration: none;
+    margin: auto;
+}
+
+a.button:active {
+    background-color: black;
+}
+
+.button-wrapper {
+    text-align: center;
+}
+
+section > svg {
+    margin: auto;
+    display: block;
+}

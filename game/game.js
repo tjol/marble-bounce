@@ -29,7 +29,7 @@ window.addEventListener("load", function (event) {
     
     function loadLevel(levelName, callback) {
         const xhr = new XMLHttpRequest();
-        xhr.open("GET", `${levelName}.xml`, true);
+        xhr.open("GET", `../levels/${levelName}.xml`, true);
         xhr.onload = xhrEvt => {
             if (xhr.readyState === xhr.DONE && xhr.status === 200) {
                 const floatAttr = (elem, attrName) => parseFloat(elem.getAttribute(attrName));
@@ -406,7 +406,7 @@ window.addEventListener("load", function (event) {
     let has_moved = false;
     let told_to_move = false;
 
-    window.addEventListener('devicemotion', function(event) {
+    function handleDeviceMotion (event) {
         sensors_work = true;
         const accel = event.accelerationIncludingGravity;
 
@@ -443,11 +443,31 @@ window.addEventListener("load", function (event) {
                 }, 1000);
             }
         }
-    }, true);
+    }
 
-    setTimeout(function() {
-        if (!sensors_work)
-            MESSAGE = "open this on your phone!";
-    }, 1000);
+    if ("DeviceMotionEvent" in window) {
+        if (typeof(DeviceMotionEvent.requestPermission) === "function") {
+            // This is probably mobile Safari
+            sensors_work = true;
+            have_permission = false;
+            MESSAGE = "this game needs sensors";
+            DeviceMotionEvent.requestPermission().then( response => {
+                if ( response == "granted" ) {
+                    have_permission = true;
+                    MESSAGE = "";
+                    window.addEventListener('devicemotion', handleDeviceMotion, true);
+                }
+            });
+        } else {
+            window.addEventListener('devicemotion', handleDeviceMotion, true);
+            setTimeout(function() {
+                if (!sensors_work) {
+                    MESSAGE = "open this on your phone!";
+                }
+            }, 1000);
+        }
+    } else {
+        MESSAGE = "no sensors detected!";
+    }
 
 });
