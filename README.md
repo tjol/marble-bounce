@@ -6,4 +6,6 @@ acceleration determines in-game gravity.
 
 Try it at https://marble-bounce.web.app/
 
+![QR Code](marble-bounce-qrcode.png)
+
 Works best on Chrome for Android; untested on iOS (let me know if it works!)

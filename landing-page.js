@@ -31,6 +31,8 @@ function guessIfMobile () {
 }
 
 window.addEventListener("load", ev => {
+    document.body.style.height = window.innerHeight + "px";
+
     // Do we have devicemotion?
     if ("DeviceMotionEvent" in window) {
         if (typeof (DeviceMotionEvent.requestPermission) === "function") {
