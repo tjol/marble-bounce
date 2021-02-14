@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap');
 
 :root {
-    --text-colour: #333;
-    --icon-colour: #333;
+    --text-colour: #000;
+    --icon-colour: #000;
 }
 
 body {
@@ -10,10 +10,16 @@ body {
     font-family: Ubuntu, sans-serif;
     font-size: 1.3em;
     background-color: #fafafa;
-    padding: 2em;
-    margin: auto;
+    padding: 0 2em;
+    margin: 0 auto;
     max-width: 28em;
-    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body > :first-child {
+    margin-top: 2em;
 }
 
 @media only screen and (max-width: 400px) {
@@ -51,7 +57,30 @@ a.button:active {
     text-align: center;
 }
 
-section > svg {
+section > svg, section > img {
     margin: auto;
     display: block;
+}
+
+footer {
+    flex-grow: 1;
+    min-height: 48px;
+    margin: 2em;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+footer > a {
+    display: block;
+    opacity: 0.5;
+}
+
+footer > a:hover {
+    opacity: 1;
+}
+
+a > img {
+    border: none;
 }
