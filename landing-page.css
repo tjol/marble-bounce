@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap');
+
 :root {
     --text-colour: #333;
     --icon-colour: #333;
@@ -5,7 +7,7 @@
 
 body {
     color: var(--text-colour);
-    font-family: Cantarell;
+    font-family: Ubuntu, sans-serif;
     font-size: 1.3em;
     background-color: #fafafa;
     padding: 2em;

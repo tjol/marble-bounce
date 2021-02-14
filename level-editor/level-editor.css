@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu&family=Ubuntu+Mono&display=swap');
+
 :root {
     --highlight-colour: #ffcd17;
     --text-colour: #eee;
@@ -14,7 +16,11 @@ body {
     color: var(--text-colour);
     height: 100vh;
     font-size: 14px;
-    font-family: Cantarell;
+    font-family: Ubuntu, sans-serif;
+}
+
+button {
+    font-family: inherit;
 }
 
 input {
@@ -48,7 +54,7 @@ input {
 #status-bar > p {
     padding: 0;
     padding-bottom: 2px;
-    font-family: DejaVu Sans Mono;
+    font-family: Ubuntu Mono, monospace;
     font-size: 12px;
 }
 
