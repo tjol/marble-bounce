@@ -206,24 +206,46 @@ window.addEventListener("load", function (event) {
         }
     }
 
-    // Screen locking (works only on Chrome, probably)
     let screenWakeLock = null;
+    let wakeLockVideo = null;
     function requestWakeLock() {
         if ('wakeLock' in navigator) {
+            // Native wakelock (only supported in chrome on android)
             navigator.wakeLock.request('screen').then((result) => {
                 screenWakeLock = result;
             });
+        } else {
+            // Video-based wakelock bodge
+            wakeLockVideo = document.getElementById("wakelock-video");
+            wakeLockVideo.play();
+            
+            const refreshLock = () => {
+                if (wakeLockVideo !== null) {
+                    wakeLockVideo.play();
+                    setTimeout(refreshLock, 10000);
+                }
+            };
+            setTimeout(refreshLock, 10000);
         }
     }
     function releaseWakeLock() {
         if (screenWakeLock !== null) {
             screenWakeLock.release();
             screenWakeLock = null;
+        } else if (wakeLockVideo !== null) {
+            try {
+                wakeLockVideo.pause();
+            } catch {
+                //pass
+            }
+            wakeLockVideo = null;
         }
     }
     document.addEventListener('visibilitychange', () => {
-        if (screenWakeLock !== null && document.visibilityState === 'visible') {
+        if (document.visibilityState === 'visible') {
             requestWakeLock();
+        } else {
+            releaseWakeLock();
         }
     });
 
@@ -234,8 +256,13 @@ window.addEventListener("load", function (event) {
     const cv = document.getElementById("gcnv");
     const ctx = cv.getContext('2d');
 
-    cv.height = innerHeight;
-    cv.width = innerWidth;
+    cv.height = document.body.clientHeight;
+    cv.width = document.body.clientWidth;
+
+    // window.addEventListener("resize", ev => {
+    //     cv.height = window.innerHeight;
+    //     cv.width = window.innerWidth;
+    // });
 
     const scale = innerHeight / 6.0;
 
