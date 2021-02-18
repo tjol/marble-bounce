@@ -347,11 +347,70 @@ on their own */
     background: var(--shadow-background2);
 }
 
+.modal-window-buttons button:disabled {
+    color: var(--shadow-text-colour);
+    /* background: var(--shadow-background2); */
+}
+
 #level-save-window-content {
     font-size: 1.1em;
     padding: 1em;
     display: flex;
     flex-direction: column;
+}
+
+.tab-bar {
+    font-size: 1em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-grow: 0 !important;
+    display: flex;
+
+}
+
+.tab-bar input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.tab-bar label {
+    background: var(--background2);
+    display: block;
+    padding: 1em;
+    flex-grow: 1;
+    border-right: 1px solid var(--background3);
+}
+
+.tab-bar label:first-of-type {
+    border-top-left-radius: 1em;
+}
+
+.tab-bar label:last-of-type {
+    border: none;
+    border-top-right-radius: 1em;
+}
+
+.tab-bar input:checked + label {
+    background: var(--background1);
+}
+
+.tab-bar input:disabled + label {
+    color: var(--shadow-text-colour);
+}
+
+#level-open-page-cloud,
+#level-open-page-local {
+    flex-grow: 1;
+}
+
+#level-open-page-cloud {
+    padding: 1em;
+}
+
+#level-open-page-local {
+    font-size: 1.2em;
+    text-align: center;
+    padding: 2em;
 }
 
 .file-list {

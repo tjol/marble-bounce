@@ -69,6 +69,7 @@ function subscribeToUserLevels () {
 }
 
 function unsubscribeFromUserLevels () {
+    if (myLevelsRef == null) return;
     myLevelsRef.off('value', onLevels);
     myLevelsRef = null;
     myLevels = null;

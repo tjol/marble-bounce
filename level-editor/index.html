@@ -171,17 +171,6 @@
     <!-------------------------------------------------------------------------
           MODAL DIALOGS
       ------------------------------------------------------------------------->
-    <div id="file-open-window" class="modal hidden-modal">
-      <dialog class="modal-window">
-        <div>
-          <p>Please select a level XML file</p>
-          <p><input type="file" accept=".xml,application/xml,text/xml"></p>
-        </div>
-        <div class="modal-window-buttons">
-          <button>Cancel</button>
-        </div>
-      </dialog>
-    </div>
     <div id="login-window" class="modal hidden-modal">
       <dialog class="modal-window">
         <div id="auth-container">
@@ -203,6 +192,29 @@
         <div class="modal-window-buttons">
           <button id="reject-cookie-btn">Cancel</button>
           <button id="accept-cookie-btn">Accept</button>
+        </div>
+      </dialog>
+    </div>
+    <div id="level-open-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div class="tab-bar">
+          <input type="radio" name="level-open-tab" value="cloud"
+                 id="level-open-tab-cloud">
+          <label for="level-open-tab-cloud">Cloud</label>
+          <input type="radio" name="level-open-tab" value="local"
+                 id="level-open-tab-local">
+          <label for="level-open-tab-local">Local File</label>
+        </div>
+        <div id="level-open-page-cloud">
+          <ul id="level-open-file-list" class="file-list"></ul>
+        </div>
+        <div id="level-open-page-local">
+          <p>Please select a level XML file</p>
+          <p><input type="file" accept=".xml,application/xml,text/xml"></p>
+        </div>
+        <div class="modal-window-buttons">
+          <button id="cancel-open-btn">Cancel</button>
+          <button id="open-level-btn">Open</button>
         </div>
       </dialog>
     </div>

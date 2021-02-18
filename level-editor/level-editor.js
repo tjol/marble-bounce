@@ -260,38 +260,18 @@ function openLevelFromXmlString (xmlString) {
     selectThing(level, null);
 }
 
-function doOpenLevel () {
-    // Set up the dialog
-    const dialog = document.getElementById("file-open-window");
-    dialog.classList.remove("hidden-modal");
-
-    const cancelBtn = dialog.querySelector("button");
-    const fileInput = dialog.querySelector("input");
-    fileInput.value = "";
-
-    const closeDialog = () => {
-        cancelBtn.onclick = null;
-        fileInput.onchange = null;
-        dialog.classList.add("hidden-modal");
-    }
-
-    cancelBtn.onclick = closeDialog;
-
-
-    fileInput.onchange = async ev => {
-        if (fileInput.files.length > 0) {
-            closeDialog();
-            const f = fileInput.files[0];
-            const xmltext = await f.text();
-
-            try {
-                openLevelFromXmlString(xmltext);
-            } catch {
-                msgBox("Error loading level.", { "OK": () => null });
-            }
+function openLevelFromURL (url) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.onload = () => {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            level = loadLevelFromDocument(xhr.responseXML);
+            drawLevel(level);
+            setUpUI(level);
+            selectThing(level, null);
         }
     };
-
+    xhr.send(null);
 }
 
 function coordsFromEvent (ev, svg) {
