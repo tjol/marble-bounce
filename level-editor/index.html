@@ -4,7 +4,20 @@
     <meta charset="UTF-8"/>
     <title>Marble Bounce Level Editor</title>
     <link rel="stylesheet" type="text/css" href="level-editor.css"/>
-    <script src="level-editor.js"></script>
+
+    <script src="/__/firebase/8.2.7/firebase-app.js" defer></script>
+    <script src="/__/firebase/8.2.7/firebase-auth.js" defer></script>
+    <script src="/__/firebase/8.2.7/firebase-database.js" defer></script>
+    <script src="/__/firebase/8.2.7/firebase-storage.js" defer></script>
+    <script src="/__/firebase/init.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.js" defer></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.css"/>
+
+    <script src="util.js" defer></script>
+    <script src="level-editor.js" defer></script>
+    <script src="edit-objects.js" defer></script>
+    <script src="backend-support.js" defer></script>
+    <script src="open-save-ui.js" defer></script>
   </head>
   <body>
     <div id="main-ui">
@@ -50,37 +63,54 @@
         </div>
       </div>
       <div id="middle">
-        <menu id="top-toolbar">
-          <button id="btn-new" class="toolbar-button"
-                  onclick="actions.new()"
-                  title="New Level">
-            <svg width="16" height="16"><use href="../icons/new.svg#icon"/></svg>
-          </button>
-          <button id="btn-open" class="toolbar-button"
-                  onclick="actions.open()"
-                  title="Open">
-            <svg width="16" height="16"><use href="../icons/open.svg#icon"/></svg>
-          </button>
-          <button id="btn-download" class="toolbar-button"
-                  onclick="actions.download()"
-                  title="Download">
-            <svg width="16" height="16"><use href="../icons/save.svg#icon"/></svg>
-          </button>
-          <button id="btn-undo" class="toolbar-button"
-                  onclick="actions.undo()"
-                  title="Undo">
-            <svg width="16" height="16"><use href="../icons/undo.svg#icon"/></svg>
-          </button>
-          <button id="btn-redo" class="toolbar-button"
-                  onclick="actions.redo()"
-                  title="Redo">
-            <svg width="16" height="16">
-              <g transform="scale(-1,1) translate(-16,0)">
-                <use href="../icons/undo.svg#icon"/>
-              </g>
-            </svg>
-          </button>
-        </menu>
+        <div id="top-toolbar">
+          <menu id="top-toolbar-buttons">
+            <button id="btn-new" class="toolbar-button"
+                    onclick="actions.new()"
+                    title="New Level">
+              <svg width="16" height="16"><use href="../icons/new.svg#icon"/></svg>
+            </button>
+            <button id="btn-open" class="toolbar-button"
+                    onclick="actions.open()"
+                    title="Open">
+              <svg width="16" height="16"><use href="../icons/open.svg#icon"/></svg>
+            </button>
+            <button id="btn-upload" class="toolbar-button"
+                    onclick="backEndActions.upload()"
+                    title="Upload">
+              <svg width="16" height="16"><use href="../icons/upload.svg#icon"/></svg>
+            </button>
+            <button id="btn-download" class="toolbar-button"
+                    onclick="actions.download()"
+                    title="Download">
+              <svg width="16" height="16"><use href="../icons/save.svg#icon"/></svg>
+            </button>
+            <button id="btn-undo" class="toolbar-button"
+                    onclick="actions.undo()"
+                    title="Undo">
+              <svg width="16" height="16"><use href="../icons/undo.svg#icon"/></svg>
+            </button>
+            <button id="btn-redo" class="toolbar-button"
+                    onclick="actions.redo()"
+                    title="Redo">
+              <svg width="16" height="16">
+                <g transform="scale(-1,1) translate(-16,0)">
+                  <use href="../icons/undo.svg#icon"/>
+                </g>
+              </svg>
+            </button>
+          </menu>
+          <div id="login-tool">
+            <span id="login-status" style="display:none">
+              Signed in as <span id="user-displayname"></span>
+              <img id="user-photo">
+              <button onclick="backEndActions.logout()">[sign out]</button>
+            </span>
+            <span id="login-link">
+              <button onclick="backEndActions.login()">sign in</button>
+            </span>
+          </div>
+        </div>
         <main id="level-scene">
 
           <div id="first-page">
@@ -137,13 +167,10 @@
         </div>
       </div>
     </div>
-    <div id="msgbox" class="modal hidden-modal">
-      <dialog class="modal-window">
-        <p></p>
-        <div class="modal-window-buttons">
-        </div>
-      </dialog>
-    </div>
+
+    <!-------------------------------------------------------------------------
+          MODAL DIALOGS
+      ------------------------------------------------------------------------->
     <div id="file-open-window" class="modal hidden-modal">
       <dialog class="modal-window">
         <div>
@@ -155,5 +182,62 @@
         </div>
       </dialog>
     </div>
+    <div id="login-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div id="auth-container">
+        </div>
+        <div class="modal-window-buttons">
+          <button id="cancel-login-btn">Cancel</button>
+        </div>
+      </dialog>
+    </div>
+    <div id="cookie-consent-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <p>
+          By signing in, you agree to allow us to process your personal
+          information and store information on your device in order to allow
+          the service to function properly and securely. Your data will be
+          processed on servers operated by Google, which may be located
+          outside the European Union.
+        </p>
+        <div class="modal-window-buttons">
+          <button id="reject-cookie-btn">Cancel</button>
+          <button id="accept-cookie-btn">Accept</button>
+        </div>
+      </dialog>
+    </div>
+    <div id="level-save-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div id="level-save-window-content">
+          <p class="error-message"></p>
+          <div id="level-save-name-box">
+            <label for="level-save-level-name">Name</label>
+            <input type="text" id="level-save-level-name">
+          </div>
+          <ul id="level-save-file-list" class="file-list">
+          </ul>
+        </div>
+        <div class="modal-window-buttons">
+          <button id="cancel-save-btn">Cancel</button>
+          <button id="save-level-btn">Save</button>
+        </div>
+      </dialog>
+    </div>
+    <div id="msgbox" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <p></p>
+        <div class="modal-window-buttons">
+        </div>
+      </dialog>
+    </div>
+    <template id="file-li-template">
+      <li>
+        <p></p>
+        <button class="list-button delete-button"
+                title="Delete">
+            <svg width="16" height="16"><use href="../icons/delete.svg#icon"/></svg>
+        </button>
+      </li>
+  </template>
   </body>
 </html>

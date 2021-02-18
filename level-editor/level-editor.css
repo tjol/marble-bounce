@@ -42,7 +42,33 @@ input {
 }
 
 #top-toolbar {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+#top-toolbar-buttons {
+    margin: 0;
+    padding: 2px 8px;
+}
+
+#login-tool {
+    line-height: 24px;
+    padding: 0 8px;
+}
+
+#login-tool button {
+    color: inherit;
+    background: transparent;
+    border: none;
+    font-size: inherit;
+    padding: 0;
+}
+
+#user-photo {
+    vertical-align: middle;
+    height: 24px;
+    margin: 0 0.5em;
+    border-radius: 12px;
 }
 
 #status-bar {
@@ -213,7 +239,8 @@ input {
     background-color: var(--shadow-background2);
 }
 
-#object-list > li.selected {
+#object-list > li.selected,
+.file-list > li.selected {
     color: var(--highlight-colour);
     background-color: var(--background1);
 }
@@ -272,7 +299,7 @@ on their own */
 
 .modal-window {
     width: 36em;
-    height: 18em;
+    min-height: 18em;
     background: var(--background1);
     border: 1px solid var(--background3);
     color: var(--text-colour);
@@ -318,6 +345,53 @@ on their own */
 .modal-window-buttons button:active {
     color: var(--shadow-text-colour);
     background: var(--shadow-background2);
+}
+
+#level-save-window-content {
+    font-size: 1.1em;
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+}
+
+.file-list {
+    flex-grow: 1;
+    list-style: none;
+    padding: 0;
+    margin: 1em 0 0 0;
+    overflow: auto;
+    max-height: 20em;
+    text-align: left;
+    border: 1px solid var(--background3);
+    font-size: 14px;
+}
+
+.file-list > li {
+    border-bottom: 1px dotted var(--background3);
+    padding: 2px 1em;
+    cursor: default;
+    display: flex;
+}
+
+.file-list > li > p:first-child {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+}
+
+.file-list > li:nth-child(even) {
+    background-color: var(--shadow-background2);
+}
+
+#level-save-name-box label {
+    margin-right: 1em;
+    text-align: right;
+}
+
+.error-message {
+    margin: 0 0 1em 0;
+    padding: 0;
+    color: #ff5500;
 }
 
 #first-page {
