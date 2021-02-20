@@ -40,9 +40,6 @@ input {
     border: none;
     min-height: 28px;
     max-height: 28px;
-}
-
-#top-toolbar {
     display: flex;
     justify-content: space-between;
 }
@@ -72,17 +69,13 @@ input {
     border-radius: 12px;
 }
 
-#status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 #status-bar > p {
-    padding: 0;
+    padding: 0 1em;
     padding-bottom: 2px;
     font-family: Ubuntu Mono, monospace;
-    font-size: 12px;
+    /* font-size: 12px; */
+    line-height: 24px;
+    margin: 0;
 }
 
 .toolbar-button, .list-button {
@@ -287,7 +280,7 @@ on their own */
     top: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.5);
 
     display: flex;
     justify-content: center;
@@ -305,6 +298,7 @@ on their own */
     border: 1px solid var(--background3);
     color: var(--text-colour);
     border-radius: 1em;
+    box-shadow: 0px 0px 1.5em 0px rgba(0,0,0,0.5);
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -453,6 +447,51 @@ on their own */
     padding: 0;
     color: #ff5500;
 }
+
+.popup-menu {
+    display: inline-block;
+    position: absolute;
+    margin-top: 26px;
+    margin-left: -4em;
+    background: var(--background1);
+    border: 1px solid var(--background3);
+    border-top: none;
+    color: var(--text-colour);
+    border-radius: 0 0 1em 1em;
+    /* box-shadow: 0px 0.7em 0.7em 0px rgba(0,0,0,0.5); */
+    padding: 1em;
+}
+
+.popup-menu > :first-child {
+    margin-top: 0;
+}
+
+.popup-menu > :last-child {
+    margin-bottom: 0;
+    clear: both;
+}
+
+.hidden-popup {
+    display: none;
+}
+
+#test-popup > p:first-child {
+    float: left;
+    padding-right: 1em;
+    font-size: 1.2em;
+    max-width: 6.5em;
+}
+
+#test-qr {
+    border: 0.5em solid #eee;
+    border-radius: 0.5em;
+}
+
+p#test-url {
+    text-align: center;
+    clear: both;
+}
+
 
 #first-page {
     display: flex;

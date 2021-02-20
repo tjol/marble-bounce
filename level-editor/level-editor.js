@@ -150,7 +150,7 @@ function drawLevel(level)
 
     scene.appendChild(sceneSvg);
 
-    const statusPara = document.getElementById("status-msg");
+    const statusPara = document.getElementById("status-centre");
     sceneSvg.addEventListener("mousemove", ev => {
         const svgBBox =sceneSvg.getBoundingClientRect();
         const x_px = ev.clientX;
@@ -239,11 +239,13 @@ function setUpUI(level) {
 
 function updateToolbar(level) {
     if (level == null) {
+        document.getElementById("btn-test").disabled = true;
         document.getElementById("btn-upload").disabled = true;
         document.getElementById("btn-download").disabled = true;
         document.getElementById("btn-undo").disabled = true;
         document.getElementById("btn-redo").disabled = true;
     } else {
+        document.getElementById("btn-test").disabled = false;
         document.getElementById("btn-upload").disabled = false;
         document.getElementById("btn-download").disabled = false;
         document.getElementById("btn-undo").disabled = (level.undoStack.length === 0);
@@ -289,9 +291,14 @@ function coordsFromEvent (ev, svg) {
     return { x: x_coord, y: y_coord };
 }
 
+const autoSaveHook = [];
+
 function autoSave (level) {
     const xml = level2xml(level);
     window.localStorage.setItem('levelEditorAutoSave', xml);
+    for (const cb of autoSaveHook) {
+        cb(level);
+    }
 }
 
 function unAutoSave () {

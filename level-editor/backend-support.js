@@ -213,5 +213,8 @@ const backEndActions = {
     },
     upload () {
         doUploadLevel(level);
+    },
+    test () {
+        doTest(level);
     }
 };

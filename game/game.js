@@ -9,118 +9,127 @@ https://github.com/tjol/marble-bounce
 window.addEventListener("load", function (event) {
 
     const pl = planck;
-    
+
+    function loadLevelFromXMLDocument(lvDoc, callback) {
+        const floatAttr = (elem, attrName) => parseFloat(elem.getAttribute(attrName));
+
+        const wallFixDef = {density: 0, friction: .09};
+
+        const newWorld = new pl.World({
+            gravity: pl.Vec2(0, 0)
+        });
+
+        // <level>
+        const lvElem = lvDoc.documentElement;
+        // set up the bounding box
+        const w = floatAttr(lvElem, 'width');
+        const h = floatAttr(lvElem, 'height');
+        const x0 = floatAttr(lvElem, 'left');
+        const y0 = floatAttr(lvElem, 'bottom');
+        const box = newWorld.createBody({
+            position: pl.Vec2(0, 0),
+            type: 'static'
+        });
+        box.createFixture(pl.Edge(pl.Vec2(x0, y0 + h),
+                                    pl.Vec2(x0, y0)), wallFixDef);
+        box.createFixture(pl.Edge(pl.Vec2(x0, y0),
+                                    pl.Vec2(x0 + w, y0)), wallFixDef);
+        box.createFixture(pl.Edge(pl.Vec2(x0 + w, y0),
+                                    pl.Vec2(x0 + w, y0 + h)), wallFixDef);
+        box.createFixture(pl.Edge(pl.Vec2(x0 + w, y0 + h),
+                                    pl.Vec2(x0, y0 + h)), wallFixDef);
+
+        let ball;
+
+        // handle the objects
+        for (const elem of lvElem.children) {
+            const attr = attrName => floatAttr(elem, attrName);
+            ({
+            "start": () => {
+                ball = newWorld.createDynamicBody({
+                    position: pl.Vec2(attr("x"), attr("y"))
+                });
+                ball.createFixture(pl.Circle(0.1), {
+                    density: .5,
+                    friction: .04,
+                    restitution: 0.4,
+                    userData: 'ball'
+                });
+            },
+            "cradle": () => {
+                const cradle = newWorld.createBody({
+                    position: pl.Vec2(attr("x"), attr("y")),
+                });
+                const w = attr("width"), h = attr("height");
+                cradle.createFixture(pl.Edge(pl.Vec2(-w/2, h), pl.Vec2(-w/2, 0)), wallFixDef);
+                cradle.createFixture(pl.Edge(pl.Vec2(-w/2, 0), pl.Vec2(w/2, 0)), wallFixDef);
+                cradle.createFixture(pl.Edge(pl.Vec2(w/2, 0), pl.Vec2(w/2, h)), wallFixDef);
+            },
+            "goal": () => {
+                newWorld.createBody({
+                    position: pl.Vec2(attr("x"), attr("y"))
+                }).createFixture(pl.Box(attr("width")/2, attr("height")/2), {
+                    isSensor: true,
+                    userData: 'goal'
+                });
+            },
+            "box": () => {
+                newWorld.createBody({
+                    position: pl.Vec2(attr("x"), attr("y"))
+                }).createFixture(pl.Box(attr("width")/2, attr("height")/2), wallFixDef);
+            },
+            "circle": () => {
+                newWorld.createBody({
+                    position: pl.Vec2(attr("x"), attr("y"))
+                }).createFixture(pl.Circle(attr("r")), wallFixDef);
+            },
+            "open-path": () => {
+                const body = newWorld.createBody({ position: pl.Vec2(0, 0) });
+                const nodePositions = Array.from(elem.children,
+                    pathNodeElem => pl.Vec2(floatAttr(pathNodeElem, "x"),
+                                            floatAttr(pathNodeElem, "y")));
+                for (let i = 1; i < nodePositions.length; ++i) {
+                    body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
+                }
+            },
+            "polygon": () => {
+                const body = newWorld.createBody({ position: pl.Vec2(0, 0) });
+                const nodePositions = Array.from(elem.children,
+                    pathNodeElem => pl.Vec2(floatAttr(pathNodeElem, "x"),
+                                            floatAttr(pathNodeElem, "y")));
+                let i;
+                for (i = 1; i < nodePositions.length; ++i) {
+                    body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
+                }
+                body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[0]), wallFixDef);
+            },
+            })[elem.tagName]();
+        }
+
+        newWorld.on('begin-contact', handleContact);
+        callback(newWorld, {x0, y0, w, h}, ball);
+    }
+
+    function loadLevelFromString(xmlString, callback) {
+        const parser = new DOMParser();
+        const xmldoc = parser.parseFromString(xmlString, "application/xml");
+        loadLevelFromXMLDocument(xmldoc, callback);
+    }
+
     function loadLevel(levelName, callback) {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", `../levels/${levelName}.xml`, true);
         xhr.onload = xhrEvt => {
             if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                const floatAttr = (elem, attrName) => parseFloat(elem.getAttribute(attrName));
                 const lvDoc = xhr.responseXML;
-                
-                const wallFixDef = {density: 0, friction: .09};
 
-                const newWorld = new pl.World({
-                    gravity: pl.Vec2(0, 0)
-                });
-
-                // <level>
-                const lvElem = lvDoc.documentElement;
-                // set up the bounding box
-                const w = floatAttr(lvElem, 'width');
-                const h = floatAttr(lvElem, 'height');
-                const x0 = floatAttr(lvElem, 'left');
-                const y0 = floatAttr(lvElem, 'bottom');
-                const box = newWorld.createBody({
-                    position: pl.Vec2(0, 0),
-                    type: 'static'
-                });
-                box.createFixture(pl.Edge(pl.Vec2(x0, y0 + h),
-                                          pl.Vec2(x0, y0)), wallFixDef);
-                box.createFixture(pl.Edge(pl.Vec2(x0, y0),
-                                          pl.Vec2(x0 + w, y0)), wallFixDef);
-                box.createFixture(pl.Edge(pl.Vec2(x0 + w, y0),
-                                          pl.Vec2(x0 + w, y0 + h)), wallFixDef);
-                box.createFixture(pl.Edge(pl.Vec2(x0 + w, y0 + h),
-                                          pl.Vec2(x0, y0 + h)), wallFixDef);
-
-                let ball;
-
-                // handle the objects
-                for (const elem of lvElem.children) {
-                    const attr = attrName => floatAttr(elem, attrName);
-                    ({
-                    "start": () => {
-                        ball = newWorld.createDynamicBody({
-                            position: pl.Vec2(attr("x"), attr("y"))
-                        });
-                        ball.createFixture(pl.Circle(0.1), {
-                            density: .5,
-                            friction: .04,
-                            restitution: 0.4,
-                            userData: 'ball'
-                        });
-                    },
-                    "cradle": () => {
-                        const cradle = newWorld.createBody({
-                            position: pl.Vec2(attr("x"), attr("y")),
-                        });
-                        const w = attr("width"), h = attr("height");
-                        cradle.createFixture(pl.Edge(pl.Vec2(-w/2, h), pl.Vec2(-w/2, 0)), wallFixDef);
-                        cradle.createFixture(pl.Edge(pl.Vec2(-w/2, 0), pl.Vec2(w/2, 0)), wallFixDef);
-                        cradle.createFixture(pl.Edge(pl.Vec2(w/2, 0), pl.Vec2(w/2, h)), wallFixDef);
-                    },
-                    "goal": () => {
-                        newWorld.createBody({
-                            position: pl.Vec2(attr("x"), attr("y"))
-                        }).createFixture(pl.Box(attr("width")/2, attr("height")/2), {
-                            isSensor: true,
-                            userData: 'goal'
-                        });
-                    },
-                    "box": () => {
-                        newWorld.createBody({
-                            position: pl.Vec2(attr("x"), attr("y"))
-                        }).createFixture(pl.Box(attr("width")/2, attr("height")/2), wallFixDef);
-                    },
-                    "circle": () => {
-                        newWorld.createBody({
-                            position: pl.Vec2(attr("x"), attr("y"))
-                        }).createFixture(pl.Circle(attr("r")), wallFixDef);
-                    },
-                    "open-path": () => {
-                        const body = newWorld.createBody({ position: pl.Vec2(0, 0) });
-                        const nodePositions = Array.from(elem.children,
-                            pathNodeElem => pl.Vec2(floatAttr(pathNodeElem, "x"),
-                                                    floatAttr(pathNodeElem, "y")));
-                        for (let i = 1; i < nodePositions.length; ++i) {
-                            body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
-                        }
-                    },
-                    "polygon": () => {
-                        const body = newWorld.createBody({ position: pl.Vec2(0, 0) });
-                        const nodePositions = Array.from(elem.children,
-                            pathNodeElem => pl.Vec2(floatAttr(pathNodeElem, "x"),
-                                                    floatAttr(pathNodeElem, "y")));
-                        let i;
-                        for (i = 1; i < nodePositions.length; ++i) {
-                            body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[i]), wallFixDef);
-                        }
-                        body.createFixture(pl.Edge(nodePositions[i-1], nodePositions[0]), wallFixDef);
-                    },
-                    })[elem.tagName]();
-                }
-
-                newWorld.on('begin-contact', handleContact);
-                callback(newWorld, {x0, y0, w, h}, ball);
+                loadLevelFromXMLDocument(lvDoc, callback);
             }
         };
         xhr.send(null);
     }
 
-
-    const levels = ["level1", "level2", "level3"];
-    let levelIdx = 0;
+    let haveNextLevel, nextLevel;
 
     let world, worldSize, ball;
 
@@ -135,20 +144,58 @@ window.addEventListener("load", function (event) {
         HAVE_WON = false;
     };
 
-    const haveNextLevel = () => (levelIdx + 1) < levels.length;
+    if (location.pathname.startsWith("/t/")) {
+        // Load a test level
+        haveNextLevel = () => false;
+        nextLevel = () => null;
 
-    const nextLevel = () => {
-        if (haveNextLevel()) {
-            ++levelIdx;
-            loadLevel(levels[levelIdx], setWorld);
-        }
-    };
+        let running = false;
 
-    loadLevel(levels[levelIdx], (newWorld, newWorldSize, newBall) => {
-        setWorld(newWorld, newWorldSize, newBall);
+        const testId = /^\/t\/([A-Za-z0-9_-]+)$/.exec(location.pathname)[1];
+        const testRef = firebase.database().ref("/level-test/"+testId);
 
-        window.requestAnimationFrame(drawFrame);
-    });
+        testRef.child("xml").on("value", (snapshot) => {
+            const levelXml = snapshot.val();
+
+            MESSAGE = "";
+
+            loadLevelFromString(levelXml, (newWorld, newWorldSize, newBall) => {
+                setWorld(newWorld, newWorldSize, newBall);
+
+                if (!running) {
+                    window.requestAnimationFrame(drawFrame);
+                    running = true;
+
+                    const updateAccessed = () => {
+                        testRef.child("accessed").set(Date.now()).then(() => {
+                            setTimeout(updateAccessed, 30000);
+                        });
+                    };
+                    updateAccessed();
+                }
+            });
+        });
+
+    } else {
+        // Load the normal level set
+        const levels = ["level1", "level2", "level3"];
+        let levelIdx = 0;
+
+        haveNextLevel = () => (levelIdx + 1) < levels.length;
+
+        nextLevel = () => {
+            if (haveNextLevel()) {
+                ++levelIdx;
+                loadLevel(levels[levelIdx], setWorld);
+            }
+        };
+
+        loadLevel(levels[levelIdx], (newWorld, newWorldSize, newBall) => {
+            setWorld(newWorld, newWorldSize, newBall);
+
+            window.requestAnimationFrame(drawFrame);
+        });
+    }
 
     function handleContact(contact) {
         var fixtureA = contact.getFixtureA();
@@ -192,16 +239,16 @@ window.addEventListener("load", function (event) {
     let screenWakeLock = null;
     let wakeLockVideo = null;
     function requestWakeLock() {
-        if ('wakeLock' in navigator) {
+        /*if ('wakeLock' in navigator) {
             // Native wakelock (only supported in chrome on android)
             navigator.wakeLock.request('screen').then((result) => {
                 screenWakeLock = result;
             });
-        } else {
+        } else */{
             // Video-based wakelock bodge
             wakeLockVideo = document.getElementById("wakelock-video");
             wakeLockVideo.play();
-            
+
             const refreshLock = () => {
                 if (wakeLockVideo !== null) {
                     wakeLockVideo.play();
@@ -212,10 +259,10 @@ window.addEventListener("load", function (event) {
         }
     }
     function releaseWakeLock() {
-        if (screenWakeLock !== null) {
+        /*if (screenWakeLock !== null) {
             screenWakeLock.release();
             screenWakeLock = null;
-        } else if (wakeLockVideo !== null) {
+        } else*/ if (wakeLockVideo !== null) {
             try {
                 wakeLockVideo.pause();
             } catch {
@@ -233,7 +280,7 @@ window.addEventListener("load", function (event) {
     });
 
     requestWakeLock();
-    
+
     // Rendering bit
 
     const cv = document.getElementById("gcnv");

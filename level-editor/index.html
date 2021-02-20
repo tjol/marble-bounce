@@ -12,10 +12,12 @@
     <script src="/__/firebase/init.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.js" defer></script>
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js" defer></script>
 
     <script src="util.js" defer></script>
     <script src="level-editor.js" defer></script>
     <script src="edit-objects.js" defer></script>
+    <script src="add-objects.js" defer></script>
     <script src="backend-support.js" defer></script>
     <script src="open-save-ui.js" defer></script>
   </head>
@@ -99,6 +101,19 @@
                 </g>
               </svg>
             </button>
+            <button id="btn-test" class="toolbar-button"
+                    onclick="backEndActions.test()"
+                    title="Test">
+              <svg width="16" height="16"><use href="../icons/play.svg#icon"/></svg>
+            </button>
+            <button id="btn-end-test" class="toolbar-button"
+                    title="End Test" style="display: none">
+              <svg width="16" height="16"><use href="../icons/stop.svg#icon"/></svg>
+            </button>
+            <div id="test-popup" class="popup-menu hidden-popup">
+              <p>Open on your phone:</p><canvas id="test-qr"></canvas>
+              <p id="test-url"></p>
+            </div>
           </menu>
           <div id="login-tool">
             <span id="login-status" style="display:none">
@@ -132,7 +147,11 @@
           </div>
 
         </main>
-        <div id="status-bar"><p id="status-msg"></p></div>
+        <div id="status-bar">
+          <p id="status-left"></p>
+          <p id="status-centre"></p>
+          <p id="status-right"></p>
+        </div>
       </div>
       <div id="right-sidebar">
         <div class="sidebar-window">

@@ -9,6 +9,10 @@
       "**/.*/*",
       "**/.*",
       "**/node_modules/**"
-    ]
+    ],
+    "rewrites": [ {
+      "source": "/t/**",
+      "destination": "/game/index.html"
+    } ]
   }
 }

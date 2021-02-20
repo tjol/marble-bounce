@@ -211,3 +211,104 @@ class UserLevelList {
         return encodeURIComponent(name) in this.levels;
     }
 }
+
+let activeTest = null;
+
+async function doTest (level) {
+    if (level == null) return;
+
+    // Are we logged in?
+    if (!userLoggedIn()) {
+        msgBox("You need to sign in to test your level.", {
+            "Cancel": () => null,
+            "Continue": () => {
+                backEndActions.login().then(() => doTest(level));
+            }
+        });
+        return;
+    }
+
+    let levelXml = level2xml(level);
+
+    const testId = getRandomIdUsingHash(levelXml);
+    const testRef = fbDb.ref(`level-test/${testId}`);
+    const testSpec = {
+        uid: userInfo.uid,
+        xml: levelXml,
+        accessed: 0,
+        modified: Date.now()
+    };
+    await testRef.set(testSpec);
+
+    const testBtn = document.getElementById("btn-test");
+    const stopBtn = document.getElementById("btn-end-test");
+    const popup = document.getElementById("test-popup");
+    const status = document.getElementById("status-right");
+
+    const onAccessed = (snapshot) => {
+        const accessed = snapshot.val();
+        testSpec.accessed = accessed;
+
+        if (!(accessed > 0)) return;
+
+        if (Date.now() - accessed < 60000) {
+            popup.classList.add("hidden-popup");
+            status.innerText = "TEST ACTIVE";
+            setTimeout(() => {
+                if (accessed == testSpec.accessed) {
+                    // test client gone?
+                    status.innerText = "TEST INACTIVE";
+                    setTimeout(() => {
+                        if (accessed == testSpec.accessed) {
+                            shutDownTest();
+                        }
+                    }, 70000);
+                }
+            }, 70000);
+        }
+    };
+
+    const onAutoSave = (newLevel) => {
+        level = newLevel;
+        levelXml = level2xml(level);
+        // Could do this in a transaction but it doesn't REALLY need to be
+        // atomic
+        testSpec.modified = Date.now();
+        testSpec.xml = levelXml;
+        testRef.child("xml").set(levelXml);
+        testRef.child("modified").set(testSpec.modified);
+    };
+
+    autoSaveHook.push(onAutoSave);
+
+    testRef.child("accessed").on("value", onAccessed);
+
+    const testUrl = getBaseUrl() + "t/" + testId;
+
+    const testUrlPara = document.getElementById("test-url");
+    testUrlPara.innerText = testUrl;
+
+    const testQRCanvas = document.getElementById("test-qr");
+    const qr = new QRious({
+        element: testQRCanvas,
+        value: testUrl,
+        background: "#eeeeee",
+        foreground: "#333333"
+    });
+
+    popup.classList.remove("hidden-popup");
+
+    testBtn.style.display = "none";
+    stopBtn.style.display = null;
+
+    const shutDownTest = () => {
+        testBtn.style.display = null;
+        stopBtn.style.display = "none";
+        popup.classList.add("hidden-popup");
+        testRef.child("accessed").off("value", onAccessed);
+        testRef.remove();
+        autoSaveHook.remove(onAutoSave);
+    };
+
+    stopBtn.onclick = shutDownTest;
+}

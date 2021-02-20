@@ -2,7 +2,12 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <script src="//cdn.jsdelivr.net/npm/planck-js@0.3.23/dist/planck.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/planck-js@0.3.23/dist/planck.min.js"></script>
+        <script src="/__/firebase/8.2.7/firebase-app.js" defer></script>
+        <script src="/__/firebase/8.2.7/firebase-database.js" defer></script>
+        <!-- <script src="/__/firebase/8.2.7/firebase-storage.js" defer></script> -->
+        <script src="/__/firebase/init.js" defer></script>
+
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Marble Bounce!</title>
         <style>
@@ -28,10 +33,10 @@
     </head>
     <body>
         <video id="wakelock-video" loop muted>
-          <source src="px.webm" type="video/webm">
-          <source src="px.mp4" type="video/mp4">
+          <source src="/game/px.webm" type="video/webm">
+          <source src="/game/px.mp4" type="video/mp4">
         </video>
         <canvas id="gcnv"></canvas>
-        <script src="./game.js"></script>
+        <script src="/game/game.js"></script>
     </body>
 </html>
