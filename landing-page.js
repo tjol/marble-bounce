@@ -27,7 +27,7 @@ function thisMayNotBeAPhone () {
 }
 
 function guessIfMobile () {
-    return /Android|iPhone/i.test(navigator.userAgent);
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 window.addEventListener("load", ev => {
