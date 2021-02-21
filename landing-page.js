@@ -34,7 +34,7 @@ window.addEventListener("load", ev => {
     document.body.style.height = window.innerHeight + "px";
 
     // Do we have devicemotion?
-    if ("DeviceMotionEvent" in window) {
+    if (typeof DeviceMotionEvent !== "undefined") {
         if (typeof (DeviceMotionEvent.requestPermission) === "function") {
             // Mobile Safari needs the user to give permission
             if (/iPhone|iPad/i.test(navigator.userAgent)) {

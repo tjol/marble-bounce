@@ -189,12 +189,46 @@ function winGame() {
 function pauseGame () {
     PAUSED = true;
     releaseWakeLock();
-    document.exitFullscreen();
+    _exitFullscreen();
 
     const pauseBtn = document.getElementById("pause-button");
     pauseBtn.style.display = "none";
 
     showStartIfSensors();
+}
+
+function _exitFullscreen () {
+    if ("exitFullscreen" in document) {
+        document.exitFullscreen();
+    } else if ("webkitExitFullscreen" in document) {
+        document.webkitExitFullscreen();
+    }
+}
+
+function _requestFullscreen (elem, options) {
+    if ("requestFullscreen" in elem) {
+        elem.requestFullscreen(options);
+    } else if ("webkitRequestFullscreen" in elem) {
+        elem.webkitRequestFullscreen(options);
+    }
+}
+
+function _isFullscreen () {
+    if ("fullscreenElement" in document) {
+        return document.fullscreenElement != null;
+    } else if ("webkitFullscreenElement" in document) {
+        return document.webkitFullscreenElement != null;
+    } else {
+        return false;
+    }
+}
+
+function _setOnFullscreenChange (handler) {
+    if ("onfullscreenchange" in document) {
+        document.onfullscreenchange = handler;
+    } else if ("onwebkitfullscreenchange" in document) {
+        document.onwebkitfullscreenchange = handler;
+    }
 }
 
 function initGame () {
@@ -211,12 +245,26 @@ function showStartIfSensors () {
         startBtn.onclick = async ev => {
             // request full screen and all
             const mainElem = document.querySelector("main");
-            // try {
-                await mainElem.requestFullscreen({ navigationUI: "hide" });
-            // } catch { /* didn't work? whatever */ }
+            try {
+                await _requestFullscreen(mainElem, { navigationUI: "hide" });
+                console.log("entered fullscreen");
+                setTimeout(() => {
+                    _setOnFullscreenChange(() => {
+                        if (!_isFullscreen()) {
+                            _setOnFullscreenChange(null);
+                            pauseGame();
+                        }
+                    });
+                }, 500);
+            } catch {
+                console.log("entering fullscreen failed");
+            }
             try {
                 await screen.orientation.lock("portrait");
-            } catch { /* this isn't even supported on Safari */ }
+                console.log("orientation locked");
+            } catch {
+                console.log("locking orientation failed")
+            }
             // TODO apply some hack to compensate for orientation changes
             startBtn.onclick = null;
             startBtn.style.display = "none";
@@ -424,6 +472,8 @@ let init_a_y = null;
 let has_moved = false;
 let told_to_move = false;
 
+const coordsInverted = !!(/iPhone|iPad/i.test(navigator.userAgent))
+
 function handleDeviceMotion (event) {
     sensors_work = true;
     const accel = event.accelerationIncludingGravity;
@@ -432,6 +482,12 @@ function handleDeviceMotion (event) {
     let a_y = - Math.sqrt(accel.y * accel.y + accel.z * accel.z);
     if ((accel.y < 0 && Math.abs(accel.y) > Math.abs(accel.z)) || (accel.z < 0 && Math.abs(accel.z) > Math.abs(accel.y)))
         a_y = -a_y;
+    
+    if (coordsInverted) {
+        a_x = -a_x;
+        a_y = -a_y;
+    }
+    
     const g = pl.Vec2(- a_x * 2, a_y * 2);
     if (typeof world !== 'undefined') world.setGravity(g);
 
@@ -556,11 +612,11 @@ window.addEventListener("load", function (event) {
         if (typeof(DeviceMotionEvent.requestPermission) === "function") {
             // This is probably mobile Safari
             sensors_work = true;
-            have_permission = false;
+            
             setToast("this game needs sensors");
             DeviceMotionEvent.requestPermission().then( response => {
                 if ( response == "granted" ) {
-                    have_permission = true;
+                    
                     setToast(null);
                     window.addEventListener('devicemotion', handleDeviceMotion, true);
                 }
