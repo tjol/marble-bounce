@@ -24,6 +24,16 @@ button {
     font-family: inherit;
 }
 
+a:link, a:visited {
+    font-family: inherit;
+    color: #8888ff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
 input {
     padding: 0;
     margin: 0;
@@ -51,7 +61,9 @@ input {
 
 #login-tool {
     line-height: 24px;
-    padding: 0 8px;
+    padding: 2px 8px;
+    display: flex;
+    justify-content: right;
 }
 
 #login-tool button {
@@ -60,13 +72,6 @@ input {
     border: none;
     font-size: inherit;
     padding: 0;
-}
-
-#user-photo {
-    vertical-align: middle;
-    height: 24px;
-    margin: 0 0.5em;
-    border-radius: 12px;
 }
 
 #status-bar > p {
@@ -460,6 +465,16 @@ on their own */
     border-radius: 0 0 1em 1em;
     /* box-shadow: 0px 0.7em 0.7em 0px rgba(0,0,0,0.5); */
     padding: 1em;
+}
+
+.popup-menu-r {
+    margin-left: 0;
+    /* transform: translateX(-100%); */
+}
+
+menu.popup-menu {
+    list-style: none;
+    min-width: 8em;
 }
 
 .popup-menu > :first-child {

@@ -41,10 +41,20 @@ window.addEventListener("load", ev => {
             const loginStatusElem = document.getElementById("login-status");
             loginStatusElem.style.display = null;
             document.getElementById("user-displayname").textContent = name;
-            document.getElementById("user-photo").src = (photoURL == null
-                ? "anonymous.png" : photoURL);
-
             document.getElementById("login-link").style.display = "none";
+
+            document.getElementById("user-menu-button").onclick = () => {
+                const userMenu = document.getElementById("user-menu-popup");
+                userMenu.classList.remove("hidden-popup");
+
+                const closeMenu = ev => {
+                    userMenu.classList.add("hidden-popup");
+                    document.body.removeEventListener("click", closeMenu, { capture: true });
+                    // allow propagation to menu buttons and whatnot
+                };
+
+                document.body.addEventListener("click", closeMenu, { capture: true });
+            };
 
             subscribeToUserLevels();
         } else {
@@ -192,7 +202,8 @@ const backEndActions = {
                 // tosUrl and privacyPolicyUrl accept either url string or a callback
                 // function.
                 // Terms of service url/callback.
-                // tosUrl: '<your-tos-url>',
+                tosUrl: '/tos.html',
+                privacyPolicyUrl: '/tos.html#privacy',
                 // Privacy policy url/callback.
                 // privacyPolicyUrl: function() {
                 //   window.location.assign('<your-privacy-policy-url>');
@@ -230,5 +241,11 @@ const backEndActions = {
     },
     test () {
         doTest(level);
+    },
+    async changeName () {
+        const newName = await askUserForName(userInfo.name);
+        await fbDb.ref(`users/${userInfo.uid}/name`).set(newName);
+        userInfo.name = newName;
+        document.getElementById("user-displayname").textContent = newName;
     }
 };

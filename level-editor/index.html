@@ -116,14 +116,16 @@
             </div>
           </menu>
           <div id="login-tool">
-            <span id="login-status" style="display:none">
-              Signed in as <span id="user-displayname"></span>
-              <img id="user-photo">
-              <button onclick="backEndActions.logout()">[sign out]</button>
-            </span>
-            <span id="login-link">
+            <div id="login-status" style="display:none">
+              <button id="user-menu-button">Signed in as <span id="user-displayname"></span></button>
+            </div>
+            <div id="login-link">
               <button onclick="backEndActions.login()">sign in</button>
-            </span>
+            </div>
+            <menu id="user-menu-popup" class="popup-menu popup-menu-r hidden-popup">
+              <li><button id="change-name-btn" onclick="backEndActions.changeName()">change name</button></li>
+              <li><button id="logout-btn" onclick="backEndActions.logout()">sign out</button></li>
+            </menu>
           </div>
         </div>
         <main id="level-scene">
@@ -201,13 +203,17 @@
     </div>
     <div id="cookie-consent-window" class="modal hidden-modal">
       <dialog class="modal-window">
-        <p>
-          By signing in, you agree to allow us to process your personal
-          information and store information on your device in order to allow
-          the service to function properly and securely. Your data will be
-          processed on servers operated by Google, which may be located
-          outside the European Union.
-        </p>
+        <div>
+          <p>
+            By signing in, you agree to allow us to process your personal
+            information in order to allow the service to function properly
+            and securely. Your data will be processed on servers operated by
+            Google, which may be located outside the European Union.
+          </p>
+          <p>
+            For details, see our <a href="/tos.html#privacy" target="_blank">Privacy Policy</a>.
+          </p>
+        </div>
         <div class="modal-window-buttons">
           <button id="reject-cookie-btn">Cancel</button>
           <button id="accept-cookie-btn">Accept</button>
@@ -241,7 +247,10 @@
       <dialog class="modal-window">
         <div id="level-save-window-content">
           <p class="error-message"></p>
-          <input type="text" id="level-save-level-name">
+          <div id="level-save-name-box">
+            <label for="level-save-level-name">Name</label>
+            <input type="text" id="level-save-level-name">
+          </div>
           <ul id="level-save-file-list" class="file-list">
           </ul>
         </div>
@@ -256,7 +265,6 @@
         <div id="name-input-window-content">
           <p>What should we call you?</p>
           <div id="name-input-name-box">
-            <label for="name-input-box">Name</label>
             <input type="text" id="name-input-box">
           </div>
           <p>Other players will see your name when you share levels. You can
