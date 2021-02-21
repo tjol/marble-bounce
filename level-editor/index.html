@@ -241,16 +241,30 @@
       <dialog class="modal-window">
         <div id="level-save-window-content">
           <p class="error-message"></p>
-          <div id="level-save-name-box">
-            <label for="level-save-level-name">Name</label>
-            <input type="text" id="level-save-level-name">
-          </div>
+          <input type="text" id="level-save-level-name">
           <ul id="level-save-file-list" class="file-list">
           </ul>
         </div>
         <div class="modal-window-buttons">
           <button id="cancel-save-btn">Cancel</button>
           <button id="save-level-btn">Save</button>
+        </div>
+      </dialog>
+    </div>
+    <div id="name-input-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div id="name-input-window-content">
+          <p>What should we call you?</p>
+          <div id="name-input-name-box">
+            <label for="name-input-box">Name</label>
+            <input type="text" id="name-input-box">
+          </div>
+          <p>Other players will see your name when you share levels. You can
+            change it later.
+          </p>
+        </div>
+        <div class="modal-window-buttons">
+          <button id="save-name-btn">Done</button>
         </div>
       </dialog>
     </div>

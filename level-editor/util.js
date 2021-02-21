@@ -77,6 +77,29 @@ function msgBox (message, actions) {
     }
 }
 
+async function askUserForName (currentName) {
+    const inputWindow = document.getElementById("name-input-window");
+    const inputBox = document.getElementById("name-input-box");
+    inputBox.value = currentName;
+    inputWindow.classList.remove("hidden-modal");
+    const saveBtn = document.getElementById("save-name-btn");
+    saveBtn.disabled = (currentName == "" || currentName == null);
+    inputBox.oninput = () => {
+        if (inputBox.value == "") {
+            saveBtn.disabled = true;
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        saveBtn.onclick = () => {
+            if (inputBox.value == "") return;
+            saveBtn.onclick = null;
+            inputBox.oninput = null;
+            inputWindow.classList.add("hidden-modal");
+            resolve(inputBox.value);
+        };
+    });
+}
 
 const FNV_primes = {
     32: 16777619n,

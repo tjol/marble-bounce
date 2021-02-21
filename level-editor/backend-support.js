@@ -25,11 +25,22 @@ window.addEventListener("load", ev => {
             const photoURL = user.photoURL;
             const uid = user.uid;
             const accessToken = await user.getIdToken();
-            userInfo = { displayName, photoURL, uid, accessToken };
+
+            // Get the user name
+            let name = (await fbDb.ref(`users/${uid}/name`).once("value")).val();
+            if (name == null) {
+                // This user hath no name!
+                if (displayName) name = displayName;
+                else name = "Player " + Math.floor(10000 * Math.random());
+                name = await askUserForName(name);
+                fbDb.ref(`users/${uid}/name`).set(name);
+            }
+
+            userInfo = { name, photoURL, uid, accessToken };
 
             const loginStatusElem = document.getElementById("login-status");
             loginStatusElem.style.display = null;
-            document.getElementById("user-displayname").textContent = displayName;
+            document.getElementById("user-displayname").textContent = name;
             document.getElementById("user-photo").src = (photoURL == null
                 ? "anonymous.png" : photoURL);
 
@@ -171,7 +182,10 @@ const backEndActions = {
             fbAuthUI.start('#auth-container', {
                 signInOptions: [
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                {
+                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
+                }
                 ],
                 signInFlow: "popup",
 
