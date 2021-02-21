@@ -194,7 +194,7 @@ function pauseGame () {
     const pauseBtn = document.getElementById("pause-button");
     pauseBtn.style.display = "none";
 
-    showStartIfSensors();
+    if (!HAVE_WON) showStartIfSensors();
 }
 
 function _exitFullscreen () {
@@ -241,6 +241,7 @@ function showStartIfSensors () {
     if (sensors_work) {
         const startBtn = document.getElementById(
             GAME_STARTED ? "resume-button" : "start-button");
+        if (startBtn.style.display != "none") return; // already showing!
         startBtn.style.display = null;
         startBtn.onclick = async ev => {
             // request full screen and all
@@ -260,10 +261,12 @@ function showStartIfSensors () {
                 console.log("entering fullscreen failed");
             }
             try {
-                await screen.orientation.lock("portrait");
+                await screen.orientation.lock("portrait-primary");
                 console.log("orientation locked");
             } catch {
-                console.log("locking orientation failed")
+                console.log("locking orientation failed");
+                setToast("please lock your screen orientation");
+                setTimeout(() => setToast(null), 3000);
             }
             // TODO apply some hack to compensate for orientation changes
             startBtn.onclick = null;
@@ -472,7 +475,7 @@ let init_a_y = null;
 let has_moved = false;
 let told_to_move = false;
 
-const coordsInverted = !!(/iPhone|iPad/i.test(navigator.userAgent))
+const coordsInverted = !!(/iPhone|iPad|iPod/i.test(navigator.userAgent))
 
 function handleDeviceMotion (event) {
     sensors_work = true;
@@ -563,6 +566,7 @@ window.addEventListener("load", function (event) {
             loadLevelFromString(levelXml, (newWorld, newWorldSize, newBall) => {
                 setWorld(newWorld, newWorldSize, newBall);
                 setToast(null);
+                if (PAUSED) showStartIfSensors();
 
                 if (!running) {
                     initGame();

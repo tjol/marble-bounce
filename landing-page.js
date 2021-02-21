@@ -36,8 +36,8 @@ window.addEventListener("load", ev => {
     // Do we have devicemotion?
     if (typeof DeviceMotionEvent !== "undefined") {
         if (typeof (DeviceMotionEvent.requestPermission) === "function") {
-            // Mobile Safari needs the user to give permission
-            if (/iPhone|iPad/i.test(navigator.userAgent)) {
+            // Mobile Safari in iOS 13+ needs the user to give permission
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                 // No need to request it now
                 thisIsAPhone();
             }
