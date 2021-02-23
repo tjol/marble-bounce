@@ -107,6 +107,7 @@ function doOpenLevel () {
         cloudTabBtn.disabled = false;
         fileListObj = new UserLevelList(fileList, () => { openBtn.disabled = false; });
         cloudTabBtn.click();
+        localPage.style.display = "none";
     } else {
         cloudTabBtn.disabled = true;
         localTabBtn.click();
@@ -187,8 +188,8 @@ class UserLevelList {
             const levelName = decodeURIComponent(encodedName);
             const liFragment = liTpl.content.cloneNode(true);
             const liElem = liFragment.querySelector("li");
+            const deleteBtn = liFragment.querySelector(".delete-button");
             liFragment.querySelector("p").textContent = levelName;
-            // TODO: delete button
 
             liElem.addEventListener("click", ev => {
                 if (this.clickCb != null) this.clickCb(levelName);
@@ -197,6 +198,12 @@ class UserLevelList {
                 }
                 liElem.classList.add("selected");
                 this.selectedLevel = levelName;
+            });
+
+            deleteBtn.addEventListener("click", ev => {
+                msgBox(`Are you sure you want to delete ${levelName}?`, {
+                    No: () => null,
+                    Yes: () => deleteLevel(levelName)});
             });
 
             this.ulElem.appendChild(liFragment);

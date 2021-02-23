@@ -132,19 +132,37 @@ async function uploadLevel (name, xmlString) {
     const encodedName = encodeURIComponent(name);
     const levelDbRef = fbDb.ref(`levels/${userInfo.uid}/${encodedName}`);
 
-    let path;
-    if (encodedName in myLevels) {
-        path = myLevelsRef[encodedName].path;
-    } else {
-        // Generate a file name
-        const fileName = getNewId() + ".xml";
-        path = `levels/${userInfo.uid}/${fileName}`;
-    }
+    // Generate a file name
+    const fileName = getNewId() + ".xml";
+    const path = `levels/${userInfo.uid}/${fileName}`;
+    const [oldPath, isPublic] =
+        encodedName in myLevels
+        ? [myLevels[encodedName].path, myLevels[encodedName].isPublic]
+        : [null, false];
 
     const fileRef = fbStorageRef.child(path);
-    await fileRef.putString(xmlString, "raw", { contentType: "application/xml" });
+    await fileRef.putString(xmlString, "raw", {
+        contentType: "application/xml",
+        customMetadata: { isPublic }
+    });
 
-    await levelDbRef.set({ path, timestamp, isPublic: false });
+    await levelDbRef.set({ path, timestamp, isPublic });
+
+    if (oldPath != null) {
+        const oldFileRef = fbStorageRef.child(oldPath);
+        await oldFileRef.delete();
+    }
+}
+
+async function deleteLevel (name) {
+    // get the file path
+    const encodedName = encodeURIComponent(name);
+    const levelDbRef = fbDb.ref(`levels/${userInfo.uid}/${encodedName}`);
+    const path = myLevels[encodedName].path;
+    // TODO: unshare the level, if it is shared.
+    await levelDbRef.remove();
+    const fileRef = fbStorageRef.child(path);
+    await fileRef.delete();
 }
 
 const backEndActions = {
