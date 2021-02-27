@@ -13,6 +13,10 @@
     "rewrites": [ {
       "source": "/t/**",
       "destination": "/game/index.html"
+    },
+    {
+      "source": "/l/**",
+      "destination": "/game/index.html"
     } ]
   }
 }

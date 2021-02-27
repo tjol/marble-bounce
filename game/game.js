@@ -126,8 +126,12 @@ function loadLevelFromString(xmlString, callback) {
 }
 
 function loadLevel(levelName, callback) {
+    return loadLevelFromUrl(`../levels/${levelName}.xml`, callback);
+}
+
+function loadLevelFromUrl(levelUrl, callback) {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", `../levels/${levelName}.xml`, true);
+    xhr.open("GET", levelUrl, true);
     xhr.onload = xhrEvt => {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             const lvDoc = xhr.responseXML;
@@ -485,12 +489,12 @@ function handleDeviceMotion (event) {
     let a_y = - Math.sqrt(accel.y * accel.y + accel.z * accel.z);
     if ((accel.y < 0 && Math.abs(accel.y) > Math.abs(accel.z)) || (accel.z < 0 && Math.abs(accel.z) > Math.abs(accel.y)))
         a_y = -a_y;
-    
+
     if (coordsInverted) {
         a_x = -a_x;
         a_y = -a_y;
     }
-    
+
     const g = pl.Vec2(- a_x * 2, a_y * 2);
     if (typeof world !== 'undefined') world.setGravity(g);
 
@@ -581,6 +585,30 @@ window.addEventListener("load", function (event) {
                 }
             });
         });
+    } else if (location.pathname.startsWith("/l/")) {
+        // Load a shared level
+        haveNextLevel = () => false;
+        nextLevel = () => null;
+
+        let running = false;
+
+        const fbDb = firebase.database();
+        const shareId = /^\/l\/([A-Za-z0-9_-]+)$/.exec(location.pathname)[1];
+        const shareRef = fbDb.ref("/shares/"+shareId);
+
+        shareRef.once("value", async snapshot => {
+            const shareInfo = snapshot.val();
+            const lvlRef = fbDb.ref(`/levels/${shareInfo.uid}/${shareInfo.levelName}`);
+            const path = (await lvlRef.child('path').once("value")).val();
+            const fbStorageRef = firebase.storage().ref();
+            const fileRef = fbStorageRef.child(path);
+            const url = await fileRef.getDownloadURL();
+            loadLevelFromUrl(url, (newWorld, newWorldSize, newBall) => {
+                setWorld(newWorld, newWorldSize, newBall);
+
+                initGame();
+            });
+        });
 
     } else {
         // Load the normal level set
@@ -616,11 +644,11 @@ window.addEventListener("load", function (event) {
         if (typeof(DeviceMotionEvent.requestPermission) === "function") {
             // This is probably mobile Safari
             sensors_work = true;
-            
+
             setToast("this game needs sensors");
             DeviceMotionEvent.requestPermission().then( response => {
                 if ( response == "granted" ) {
-                    
+
                     setToast(null);
                     window.addEventListener('devicemotion', handleDeviceMotion, true);
                 }
