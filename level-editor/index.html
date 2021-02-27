@@ -87,6 +87,11 @@
                     title="Download">
               <svg width="16" height="16"><use href="../icons/save.svg#icon"/></svg>
             </button>
+            <button id="btn-share" class="toolbar-button"
+                    onclick="backEndActions.share()"
+                    title="Share">
+              <svg width="16" height="16"><use href="../icons/share.svg#icon"/></svg>
+            </button>
             <button id="btn-undo" class="toolbar-button"
                     onclick="actions.undo()"
                     title="Undo">
@@ -260,6 +265,27 @@
         </div>
       </dialog>
     </div>
+    <div id="level-share-window" class="modal hidden-modal">
+      <dialog class="modal-window">
+        <div class="tab-bar">
+          <input type="radio" name="level-share-tab" value="sharing"
+                 id="level-share-tab-sharing">
+          <label for="level-share-tab-sharing">Share Levels</label>
+          <input type="radio" name="level-share-tab" value="levelsets"
+                 id="level-share-tab-levelsets" disabled>
+          <label for="level-share-tab-levelsets" title="coming soon">Level Sets</label>
+        </div>
+        <div id="level-share-page-sharing">
+          <ul id="level-share-list" class="file-list"></ul>
+        </div>
+        <div id="level-share-page-levelsets">
+          <!-- Coming soon -->
+        </div>
+        <div class="modal-window-buttons">
+          <button id="level-share-ok-btn">Done</button>
+        </div>
+      </dialog>
+    </div>
     <div id="name-input-window" class="modal hidden-modal">
       <dialog class="modal-window">
         <div id="name-input-window-content">
@@ -285,11 +311,34 @@
     </div>
     <template id="file-li-template">
       <li>
-        <p></p>
-        <button class="list-button delete-button"
-                title="Delete">
-            <svg width="16" height="16"><use href="../icons/delete.svg#icon"/></svg>
-        </button>
+        <div class="file-li-main">
+          <p></p>
+          <div class="file-li-buttons">
+            <span style="display: inline-block" title="Shared publicly">
+              <svg width="16" height="16" class="shared-icon"><use href="../icons/share.svg#icon"/></svg>
+            </span>
+            <button class="list-button share-button"
+                    title="Share">
+              <svg width="16" height="16"><use href="../icons/share.svg#icon"/></svg>
+            </button>
+            <button class="list-button delete-button"
+                    title="Delete">
+              <svg width="16" height="16"><use href="../icons/delete.svg#icon"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="file-li-sharing">
+          <canvas class="share-qr"></canvas>
+          <div>
+            <p>Shared as:<br><span class="share-url"></span></p>
+            <p>
+              <button class="button-with-text unshare-button">
+                <svg width="16" height="16"><use href="../icons/delete.svg#icon"/></svg>
+                Stop Sharing
+              </button>
+            </p>
+          </div>
+        </div>
       </li>
   </template>
   </body>

@@ -83,14 +83,14 @@ input {
     margin: 0;
 }
 
-.toolbar-button, .list-button {
+.toolbar-button, .list-button, .button-with-text {
     border: none;
     background: inherit;
     padding: 2px;
     margin: 0;
 }
 
-.toolbar-button > svg, .list-button > svg {
+button > svg {
     vertical-align: middle;
     --icon-colour: var(--text-colour);
 }
@@ -99,24 +99,22 @@ input {
     transform: scale(1.5);
 } */
 
-.toolbar-button:active > svg,
-.toolbar-button:disabled > svg,
-.list-button:active > svg,
-.list-button:disabled > svg {
+button:active > svg,
+button:disabled > svg {
     --icon-colour: var(--shadow-text-colour);
 }
 
-.list-button.button-with-text {
+.button-with-text {
     color: var(--text-colour);
     background-color: var(--background3);
     border-radius: 3px;
     padding: 2px 12px;
 }
-.list-button.button-with-text:active {
+.button-with-text:active {
     color: var(--shadow-text-colour);
     border: none;
 }
-.list-button.button-with-text > svg {
+.button-with-text > svg {
     position: relative;
     top: -1px;
 }
@@ -398,12 +396,20 @@ on their own */
     color: var(--shadow-text-colour);
 }
 
-#level-open-page-cloud,
-#level-open-page-local {
-    flex-grow: 1;
+#level-share-window > dialog {
+    width: 50em;
 }
 
-#level-open-page-cloud {
+#level-open-page-cloud,
+#level-open-page-local,
+#level-share-page-sharing {
+    flex-grow: 1;
+    height: 30em;
+    overflow: auto;
+}
+
+#level-open-page-cloud,
+#level-share-page-sharing {
     padding: 1em;
 }
 
@@ -429,10 +435,13 @@ on their own */
     border-bottom: 1px dotted var(--background3);
     padding: 2px 1em;
     cursor: default;
+}
+
+.file-li-main {
     display: flex;
 }
 
-.file-list > li > p:first-child {
+.file-li-main > p:first-child {
     flex-grow: 1;
     margin: 0;
     padding: 0;
@@ -440,6 +449,37 @@ on their own */
 
 .file-list > li:nth-child(even) {
     background-color: var(--shadow-background2);
+}
+
+.file-li-sharing {
+    display: none;
+}
+
+li.shared-level-li.selected .file-li-sharing {
+    padding: 1em;
+    display: flex;
+}
+
+.share-qr {
+    margin-right: 1em;
+    width: 100px;
+    height: 100px;
+}
+
+.file-li-sharing p {
+    color: var(--text-colour);
+    font-size: 1.2em;
+}
+
+li.shared-level-li .share-button svg {
+    --icon-colour: #13b826;
+}
+
+.shared-icon {
+    --icon-colour: var(--text-colour);
+    margin: 2px;
+    padding: 0;
+    vertical-align: middle;
 }
 
 #level-save-name-box label {
@@ -497,7 +537,7 @@ menu.popup-menu {
     max-width: 6.5em;
 }
 
-#test-qr {
+#test-qr, .share-qr {
     border: 0.5em solid #eee;
     border-radius: 0.5em;
 }

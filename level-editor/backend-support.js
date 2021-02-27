@@ -133,7 +133,7 @@ async function uploadLevel (name, xmlString) {
     const levelDbRef = fbDb.ref(`levels/${userInfo.uid}/${encodedName}`);
 
     // Generate a file name
-    const fileName = getNewId() + ".xml";
+    const fileName = getNewId(xmlString) + ".xml";
     const path = `levels/${userInfo.uid}/${fileName}`;
     const [oldPath, isPublic] =
         encodedName in myLevels
@@ -163,6 +163,52 @@ async function deleteLevel (name) {
     await levelDbRef.remove();
     const fileRef = fbStorageRef.child(path);
     await fileRef.delete();
+}
+
+async function shareLevel (name) {
+    const encodedName = encodeURIComponent(name);
+    const levelDbRef = fbDb.ref(`levels/${userInfo.uid}/${encodedName}`);
+    const fileRef = fbStorageRef.child(myLevels[encodedName].path);
+    await fileRef.updateMetadata({ customMetadata: { isPublic: true } });
+    // reuse share-id
+    const shareId = myLevels[encodedName].sharedAs
+                        ? myLevels[encodedName].sharedAs
+                        : getNewId(encodedName + Date.now().toString());
+    const shareDbRef = fbDb.ref(`shares/${shareId}`);
+    const shareInfo = {
+        uid: userInfo.uid,
+        username: userInfo.name,
+        levelName: encodedName
+    };
+    await shareDbRef.set(shareInfo);
+    await levelDbRef.transaction(currentLvlInfo => {
+        if (currentLvlInfo.isPublic) {
+            // another client beat us to it (?!?!)
+            shareDbRef.remove();
+            return;
+        } else {
+            currentLvlInfo.sharedAs = shareId;
+            currentLvlInfo.isPublic = true;
+            return currentLvlInfo;
+        }
+    });
+}
+
+async function unshareLevel (name) {
+    const encodedName = encodeURIComponent(name);
+    const levelDbRef = fbDb.ref(`levels/${userInfo.uid}/${encodedName}`);
+    const fileRef = fbStorageRef.child(myLevels[encodedName].path);
+    const shareId = myLevels[encodedName].sharedAs;
+    const shareDbRef = fbDb.ref(`shares/${shareId}`);
+
+    // TODO: remove from any and all level sets!
+
+    await shareDbRef.remove();
+    await levelDbRef.transaction(currentLvlInfo => {
+        currentLvlInfo.isPublic = false;
+        return currentLvlInfo;
+    });
+    await fileRef.updateMetadata({ customMetadata: { isPublic: false } });
 }
 
 const backEndActions = {
@@ -257,6 +303,9 @@ const backEndActions = {
     },
     upload () {
         doUploadLevel(level);
+    },
+    share () {
+        doShare();
     },
     test () {
         doTest(level);

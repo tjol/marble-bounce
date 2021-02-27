@@ -16,16 +16,15 @@ function to3Decimals (n) {
     return parseFloat(n.toFixed(3))
 }
 
-function getNewId () {
-    return (Date.now().toString(36)
-           + Math.floor(46656 *  Math.random()).toString(36));
-}
-
-function getRandomIdUsingHash (data) {
-    const hash = fnv1a(data);
-    // Add 22 bits of randomness for a total of 54 = 9 * 6 bits
-    // These are short-lived IDs should this should be enough
-    return bi2b64((hash << 22n) | BigInt(Math.floor(0x3fffff *  Math.random())));
+function getNewId (data) {
+    if (data == undefined) {
+        data = Date.now().toString();
+    }
+    const hash = fnv1a(data); // 32 bit hash
+    // We want our ID to have 6*n bits for base64 purposes.
+    // Add 34 random bits for a total of 66
+    const randomBits = BigInt(Math.floor(0x3FFFFFFFF * Math.random()));
+    return bi2b64((hash << 34n) + randomBits);
 }
 
 function getBaseUrl () {

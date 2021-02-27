@@ -159,55 +159,125 @@ function doOpenLevel () {
 }
 
 class UserLevelList {
-    constructor (ulElem, clickCb) {
+    constructor (ulElem, clickCb, mode="opensave") {
         this.clickCb = clickCb;
         this.ulElem = ulElem;
         this.levels = {};
+        this.levelListItems = {};
         this.selectedLevel = null;
-        this._onLevels2 = snapshot => this.onLevels(snapshot);
-        myLevelsRef.on("value", this._onLevels2);
+        this.mode = mode;
+
+        // Create wrapper closures to attach to events - we can't pass in
+        // bound methods yet because we're in the constructor :-/
+        this._onNewLevel = snapshot => this.onNewLevel(snapshot);
+        this._onLevelRemoved = snapshot => this.onLevelRemoved(snapshot);
+        this._onLevelChanged = snapshot => this.onLevelChanged(snapshot);
+        myLevelsRef.on("child_added", this._onNewLevel);
+        myLevelsRef.on("child_removed", this._onLevelRemoved);
+        myLevelsRef.on("child_changed", this._onLevelChanged);
     }
 
     destroy () {
-        myLevelsRef.off("value", this._onLevels2);
+        myLevelsRef.off("child_added", this._onNewLevel);
+        myLevelsRef.off("child_removed", this._onLevelRemoved);
+        myLevelsRef.off("child_changed", this._onLevelChanged);
         while (this.ulElem.firstChild) {
             this.ulElem.firstChild.remove();
         }
     }
 
-    onLevels (snapshot) {
-        while (this.ulElem.firstChild) {
-            this.ulElem.firstChild.remove();
-        }
-
-        this.levels = snapshot.val();
+    onNewLevel (snapshot) {
+        const encodedName = snapshot.key;
+        const levelInfo = snapshot.val();
+        this.levels[encodedName] = levelInfo;
 
         const liTpl = document.getElementById("file-li-template");
+        const liFragment = liTpl.content.cloneNode(true);
+        const liElem = liFragment.querySelector("li");
 
-        for (const encodedName in this.levels) {
-            const levelName = decodeURIComponent(encodedName);
-            const liFragment = liTpl.content.cloneNode(true);
-            const liElem = liFragment.querySelector("li");
-            const deleteBtn = liFragment.querySelector(".delete-button");
-            liFragment.querySelector("p").textContent = levelName;
+        this.populateListItem(encodedName, liElem);
 
-            liElem.addEventListener("click", ev => {
-                if (this.clickCb != null) this.clickCb(levelName);
-                for (const otherLi of this.ulElem.children) {
-                    otherLi.classList.remove("selected");
-                }
-                liElem.classList.add("selected");
-                this.selectedLevel = levelName;
-            });
+        this.ulElem.appendChild(liFragment); // Returns and empty DocumentFragment
+        // JavaScript is CURSED. (and single-threaded)
+        this.levelListItems[encodedName] = this.ulElem.lastElementChild;
+    }
 
-            deleteBtn.addEventListener("click", ev => {
-                msgBox(`Are you sure you want to delete ${levelName}?`, {
-                    No: () => null,
-                    Yes: () => deleteLevel(levelName)});
-            });
+    populateListItem (encodedName, liElem) {
+        const levelName = decodeURIComponent(encodedName);
+        const deleteBtn = liElem.querySelector(".delete-button");
+        const shareBtn = liElem.querySelector(".share-button");
+        const sharedIcon = liElem.querySelector(".shared-icon");
+        const unShareBtn = liElem.querySelector(".unshare-button");
+        liElem.querySelector("p").textContent = levelName;
 
-            this.ulElem.appendChild(liFragment);
+        liElem.onclick = ev => {
+            if (this.clickCb != null) this.clickCb(levelName);
+            for (const otherLi of this.ulElem.children) {
+                otherLi.classList.remove("selected");
+            }
+            liElem.classList.add("selected");
+            this.selectedLevel = levelName;
+        };
+
+        deleteBtn.onclick = ev => {
+            msgBox(`Are you sure you want to delete ${levelName}?`, {
+                No: () => null,
+                Yes: () => deleteLevel(levelName)});
+        };
+
+        if (this.mode === "share") {
+            if (sharedIcon != null) sharedIcon.remove();
+            if (this.levels[encodedName].isPublic && this.levels[encodedName].sharedAs) {
+                liElem.classList.add("shared-level-li");
+                shareBtn.onclick = null;
+                // This level is shared, let's add a QR code and stuff
+                const shareId = this.levels[encodedName].sharedAs;
+                const shareUrl = getBaseUrl() + "l/" + shareId;
+
+                const shareUrlSpan = liElem.querySelector(".share-url");
+                shareUrlSpan.textContent = shareUrl;
+
+                const shareQRCanvas = liElem.querySelector(".share-qr");
+                const qr = new QRious({
+                    element: shareQRCanvas,
+                    value: shareUrl,
+                    background: "#eeeeee",
+                    foreground: "#333333"
+                });
+
+                unShareBtn.onclick = () => unshareLevel(levelName);
+            } else {
+                liElem.classList.remove("shared-level-li");
+                shareBtn.onclick = ev => {
+                    if (!this.levels[encodedName].isPublic) {
+                        // Share this level!
+                        shareLevel(levelName);
+                        // The rest should happen automatically
+                    }
+                };
+                unShareBtn.onclick = null;
+            }
+        } else {
+            shareBtn.remove();
+            if (!this.levels[encodedName].isPublic) {
+                sharedIcon.remove();
+            }
         }
+    }
+
+    onLevelChanged (snapshot) {
+        const encodedName = snapshot.key;
+        const liElem = this.levelListItems[encodedName];
+        this.levels[encodedName] = snapshot.val();
+        this.populateListItem (encodedName, liElem);
+    }
+
+    onLevelRemoved (snapshot) {
+        const encodedName = snapshot.key;
+
+        delete this.levels[encodedName];
+        this.levelListItems[encodedName].remove();
+        delete this.levelListItems[encodedName];
     }
 
     get selectedLevelInfo () {
@@ -237,7 +307,7 @@ async function doTest (level) {
 
     let levelXml = level2xml(level);
 
-    const testId = getRandomIdUsingHash(levelXml);
+    const testId = getNewId(levelXml);
     const testRef = fbDb.ref(`level-test/${testId}`);
     const testSpec = {
         uid: userInfo.uid,
@@ -260,11 +330,11 @@ async function doTest (level) {
 
         if (Date.now() - accessed < 60000) {
             popup.classList.add("hidden-popup");
-            status.innerText = "TEST ACTIVE";
+            status.textContent = "TEST ACTIVE";
             setTimeout(() => {
                 if (accessed == testSpec.accessed) {
                     // test client gone?
-                    status.innerText = "TEST INACTIVE";
+                    status.textContent = "TEST INACTIVE";
                     setTimeout(() => {
                         if (accessed == testSpec.accessed) {
                             shutDownTest();
@@ -293,7 +363,7 @@ async function doTest (level) {
     const testUrl = getBaseUrl() + "t/" + testId;
 
     const testUrlPara = document.getElementById("test-url");
-    testUrlPara.innerText = testUrl;
+    testUrlPara.textContent = testUrl;
 
     const testQRCanvas = document.getElementById("test-qr");
     const qr = new QRious({
@@ -318,4 +388,51 @@ async function doTest (level) {
     };
 
     stopBtn.onclick = shutDownTest;
+}
+
+
+function doShare ()
+{
+    // Are we logged in?
+    if (!userLoggedIn()) {
+        msgBox("You need to sign in to share levels.", {
+            "Cancel": () => null,
+            "Continue": () => {
+                backEndActions.login().then(doShare);
+            }
+        });
+        return;
+    }
+
+    const dialog = document.getElementById("level-share-window");
+    dialog.classList.remove("hidden-modal");
+
+    const okBtn = document.getElementById("level-share-ok-btn");
+    const levelList = document.getElementById("level-share-list");
+
+    const sharingTabBtn = document.getElementById("level-share-tab-sharing");
+    const levelsetsTabBtn = document.getElementById("level-share-tab-levelsets");
+    const sharingPage = document.getElementById("level-share-page-sharing");
+    const levelsetsPage = document.getElementById("level-share-page-levelsets");
+
+    levelsetsPage.style.display = "none";
+    sharingTabBtn.click();
+
+    const onLevelSelect = () => null;
+
+    const levelListObj = new UserLevelList(levelList, onLevelSelect, "share");
+
+    const closeDialog = () => {
+        okBtn.onclick = null;
+        if (levelListObj != null) levelListObj.destroy();
+        // cloudTabBtn.onchange = localTabBtn.onchange = null;
+        dialog.classList.add("hidden-modal");
+    }
+
+    okBtn.onclick = closeDialog;
+
+    // cloudTabBtn.onchange = localTabBtn.onchange = () => {
+    //     cloudPage.style.display = cloudTabBtn.checked ? "block" : "none";
+    //     localPage.style.display = localTabBtn.checked ? "block" : "none";
+    // };
 }
