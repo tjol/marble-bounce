@@ -404,7 +404,6 @@ on their own */
 #level-open-page-local,
 #level-share-page-sharing {
     flex-grow: 1;
-    height: 30em;
     overflow: auto;
 }
 
@@ -425,7 +424,7 @@ on their own */
     padding: 0;
     margin: 1em 0 0 0;
     overflow: auto;
-    max-height: 20em;
+    height: 20em;
     text-align: left;
     border: 1px solid var(--background3);
     font-size: 14px;
